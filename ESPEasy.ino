@@ -112,6 +112,9 @@
 // Use the "System Info" device to read the VCC value
 #define FEATURE_ADC_VCC                  false
 
+// Defined by Perry.
+#define FEATURE_SYSINFO_BCAST            true
+
 // ********************************************************************************
 //   DO NOT CHANGE ANYTHING BELOW THIS LINE
 // ********************************************************************************

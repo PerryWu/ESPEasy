@@ -327,8 +327,16 @@ void refreshNodeList()
 void sendSysInfoUDP(byte repeats)
 {
   char log[80];
-  if (Settings.UDPPort == 0)
+  unsigned int udpPort = Settings.UDPPort;
+
+  #ifdef FEATURE_SYSINFO_BCAST
+  // if the UDPPort is unset, we send out sysinfo using port 2000.
+  if (udpPort == 0)
+    udpPort = 2000;
+  #else
+  if (udpPort == 0)
     return;
+  #endif
 
   // 1 byte 'binary token 255'
   // 1 byte id '1'
@@ -362,7 +370,7 @@ void sendSysInfoUDP(byte repeats)
     statusLED(true);
 
     IPAddress broadcastIP(255, 255, 255, 255);
-    portUDP.beginPacket(broadcastIP, Settings.UDPPort);
+    portUDP.beginPacket(broadcastIP, udpPort);
     portUDP.write(data, 80);
     portUDP.endPacket();
     if (counter < (repeats - 1))
