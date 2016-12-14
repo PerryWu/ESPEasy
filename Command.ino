@@ -19,6 +19,15 @@ void ExecuteCommand(byte source, const char *Line)
   // ****************************************
   // commands for debugging
   // ****************************************
+  if (strcasecmp_P(Command, PSTR("cmd")) == 0)
+  {
+    String cmd = Line;
+    success = true;
+    struct EventStruct TempEvent;
+    parseCommandString(&TempEvent, cmd);
+    PluginCall(PLUGIN_WRITE, &TempEvent, cmd);
+  }
+ 
   if (strcasecmp_P(Command, PSTR("sysload")) == 0)
   {
     success = true;

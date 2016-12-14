@@ -2244,3 +2244,62 @@ void createRuleEvents(byte TaskIndex)
     rulesProcessing(eventString);
   }
 }
+
+/********************************************************************************************\
+  Convert a string into a hexString. For example: "fa1234" --> 0xfa1234
+  \*********************************************************************************************/
+int strToHexStr(char *src, char*dst)
+{
+  char tmp[4];
+  int len = 0;
+  for(int i = 0; src[i] != 0; i+=2) {
+    tmp[0] = src[i];
+    tmp[1] = src[i+1];
+    tmp[2] = 0;
+    dst[i/2] = strtoul(tmp, NULL, 16);
+    len++;
+  }
+  return len;
+}
+
+/********************************************************************************************\
+  Convert a hexstring into a string. For example: data[3] = 0xfa1234 --> "fa1234"
+  \*********************************************************************************************/
+String hexstrToString(char *src, int srcLen)
+{
+  String tmp = "";
+  for(int i = 0; i < srcLen; i++) {
+    tmp += String((src[i] & 0xf0) >> 4);
+    tmp += String(src[i] & 0x0f);
+  }
+  return tmp;
+}
+
+/********************************************************************************************\
+  Print buffer content to console.
+  \*********************************************************************************************/
+void printBuf(char *data, int len) {
+  for (int i = 0; i < len; i++) {
+    Serial.print(data[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println("");
+}
+
+/*********************************************************************************************\
+   report pin mode & state (info table) using json
+  \*********************************************************************************************/
+String getReportJson(int idx, char *event, char *jsonValue)
+{
+  printToWebJSON = true;
+  String reply = "";
+
+  reply += F("{\n\"idx\":");
+  reply += idx;
+  reply += F(",\n\"event\":\"");
+  reply += event;
+  reply += F("\",\n\"value\":");
+  reply += jsonValue;
+  reply += F("\n}\n");
+  return reply;
+}

@@ -189,6 +189,7 @@
 #define SENSOR_TYPE_SWITCH                 10
 #define SENSOR_TYPE_DIMMER                 11
 #define SENSOR_TYPE_LONG                   20
+#define SENSOR_TYPE_CUSTOM                 99
 
 #define PLUGIN_INIT_ALL                     1
 #define PLUGIN_INIT                         2
@@ -250,6 +251,9 @@ ADC_MODE(ADC_VCC);
 extern "C" {
 #include "user_interface.h"
 }
+
+#include "SoftwareSerial.h"
+SoftwareSerial *swSer = NULL;
 
 // Setup DNS, only used if the ESP has no valid WiFi config
 const byte DNS_PORT = 53;
