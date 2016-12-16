@@ -75,7 +75,7 @@ boolean CPlugin_006(byte function, struct EventStruct *event, String& string)
 
     case CPLUGIN_PROTOCOL_SEND:
       {
-        statusLED(true);
+        //statusLED(true);
 
         if (ExtraTaskSettings.TaskDeviceValueNames[0][0] == 0)
           PluginCall(PLUGIN_GET_DEVICEVALUENAMES, event, dummyString);

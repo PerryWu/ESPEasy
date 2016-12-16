@@ -1063,6 +1063,7 @@ byte PluginCall(byte Function, struct EventStruct *event, String& str)
       break;
 
     // Call to all plugins. Return at first match
+    case PLUGIN_WRITEJSON:
     case PLUGIN_WRITE:
       for (x = 0; x < PLUGIN_MAX; x++)
         if (Plugin_id[x] != 0)

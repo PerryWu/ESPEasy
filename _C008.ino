@@ -91,7 +91,7 @@ boolean HTTPSend(struct EventStruct *event, byte varIndex, float value, unsigned
     addLog(LOG_LEVEL_ERROR, log);
     return false;
   }
-  statusLED(true);
+  //statusLED(true);
   if (connectionFailures)
     connectionFailures--;
 

@@ -60,7 +60,7 @@ void checkUDP()
   int packetSize = portUDP.parsePacket();
   if (packetSize)
   {
-    statusLED(true);
+    //statusLED(true);
 
     IPAddress remoteIP = portUDP.remoteIP();
     if (portUDP.remotePort() == 123)
@@ -298,7 +298,7 @@ void sendUDP(byte unit, byte* data, byte size)
   log += unit;
   addLog(LOG_LEVEL_DEBUG_MORE, log);
 
-  statusLED(true);
+  //statusLED(true);
 
   IPAddress remoteNodeIP(Nodes[unit].ip[0], Nodes[unit].ip[1], Nodes[unit].ip[2], Nodes[unit].ip[3]);
   portUDP.beginPacket(remoteNodeIP, Settings.UDPPort);
@@ -367,7 +367,7 @@ void sendSysInfoUDP(byte repeats)
     data[14] = Settings.Build >> 8;
     memcpy((byte*)data+15,Settings.Name,25);
     data[40] = NODE_TYPE_ID;
-    statusLED(true);
+    //statusLED(true);
 
     IPAddress broadcastIP(255, 255, 255, 255);
     portUDP.beginPacket(broadcastIP, udpPort);
@@ -434,9 +434,9 @@ void SSDP_schema(WiFiClient client) {
                    "<modelNumber>");
   ssdp_schema += Settings.Build;
   ssdp_schema += F("</modelNumber>"
-                   "<modelURL>http://www.letscontrolit.com</modelURL>"
-                   "<manufacturer>http://www.letscontrolit.com</manufacturer>"
-                   "<manufacturerURL>http://www.letscontrolit.com</manufacturerURL>"
+                   "<modelURL>http://www.pillakloud.com</modelURL>"
+                   "<manufacturer>http://www.pillakloud.com</manufacturer>"
+                   "<manufacturerURL>http://www.pillakloud.com</manufacturerURL>"
                    "<UDN>uuid:");
   ssdp_schema += uuid;
   ssdp_schema += F("</UDN></device>"

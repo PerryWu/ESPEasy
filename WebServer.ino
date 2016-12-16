@@ -76,12 +76,12 @@ void addHeader(boolean showMenu, String& str)
     str += F("<style>");
     str += F("* {font-family:sans-serif; font-size:12pt;}");
     str += F("h1 {font-size:16pt; color:black;}");
-    str += F("h6 {font-size:10pt; color:black; text-align:center;}");
+    //str += F("h6 {font-size:10pt; color:black; text-align:center;}");
     str += F(".button-menu {background-color:#ffffff; color:blue; margin: 10px; text-decoration:none}");
     str += F(".button-link {padding:5px 15px; background-color:#0077dd; color:#fff; border:solid 1px #fff; text-decoration:none}");
     str += F(".button-menu:hover {background:#ddddff;}");
     str += F(".button-link:hover {background:#369;}");
-    str += F("th {padding:10px; background-color:black; color:#ffffff;}");
+    str += F("th {padding:10px; background-color:#e9e9e9; color:black;}");
     str += F("td {padding:7px;}");
     str += F("table {color:black;}");
     str += F(".div_l {float: left;}");
@@ -94,7 +94,7 @@ void addHeader(boolean showMenu, String& str)
 
   str += F("</head>");
 
-  str += F("<h1>Welcome to ESP Easy: ");
+  str += F("<h1>PK-ESP Wifi Device: ");
   str += Settings.Name;
 
 #if FEATURE_SPIFFS
@@ -110,9 +110,9 @@ void addHeader(boolean showMenu, String& str)
 
   if (showMenu)
   {
-    str += F("<BR><a class=\"button-menu\" href=\".\">Main</a>");
-    str += F("<a class=\"button-menu\" href=\"config\">Config</a>");
-    str += F("<a class=\"button-menu\" href=\"hardware\">Hardware</a>");
+    str += F("<BR><a class=\"button-menu\" href=\".\">Info</a>");
+    str += F("<a class=\"button-menu\" href=\"config\">Settings</a>");
+    str += F("<a class=\"button-menu\" href=\"hardware\">GPIOs</a>");    
     str += F("<a class=\"button-menu\" href=\"devices\">Devices</a>");
     if (Settings.UseRules)
       str += F("<a class=\"button-menu\" href=\"rules\">Rules</a>");
@@ -126,7 +126,7 @@ void addHeader(boolean showMenu, String& str)
 //********************************************************************************
 void addFooter(String& str)
 {
-  str += F("<h6>Powered by www.letscontrolit.com</h6></body>");
+  str += F("<h6>Powered by www.pillakloud.com</h6></body>");
 }
 
 
@@ -147,7 +147,8 @@ void handle_root() {
   int freeMem = ESP.getFreeHeap();
   String sCommand = WebServer.arg("cmd");
 
-  if ((strcasecmp_P(sCommand.c_str(), PSTR("wifidisconnect")) != 0) && (strcasecmp_P(sCommand.c_str(), PSTR("reboot")) != 0))
+  if ((strcasecmp_P(sCommand.c_str(), PSTR("wifidisconnect")) != 0) && (strcasecmp_P(sCommand.c_str(), PSTR("reboot")) != 0)
+  && (strcasecmp_P(sCommand.c_str(), PSTR("resetdefault")) != 0))
   {
     String reply = "";
     addHeader(true, reply);
@@ -213,8 +214,8 @@ void handle_root() {
     reply += F("<TR><TD>Core Version:<TD>");
     reply += ESP.getCoreVersion();
 
-    reply += F("<TR><TD>Unit:<TD>");
-    reply += Settings.Unit;
+    //reply += F("<TR><TD>Unit:<TD>");
+    //reply += Settings.Unit;
 
     reply += F("<TR><TD>STA MAC:<TD>");
     uint8_t mac[] = {0, 0, 0, 0, 0, 0};
@@ -266,7 +267,7 @@ void handle_root() {
         reply += F("External Watchdog");
         break;
     }
-
+/*
     reply += F("<TR><TH>Node List:<TH>Name<TH>Build<TH>Type<TH>IP<TH>Age<TR><TD><TD>");
     for (byte x = 0; x < UNIT_MAX; x++)
     {
@@ -307,7 +308,7 @@ void handle_root() {
         reply += Nodes[x].age;
       }
     }
-
+*/
     reply += F("</table></form>");
     addFooter(reply);
     WebServer.send(200, "text/html", reply);
@@ -331,6 +332,13 @@ void handle_root() {
       String log = F("     : Rebooting...");
       addLog(LOG_LEVEL_INFO, log);
       cmd_within_mainloop = CMD_REBOOT;
+    }
+
+    if (strcasecmp_P(sCommand.c_str(), PSTR("resetdefault")) == 0)
+    {
+      String log = F("     : Resetting Defaults...");
+      addLog(LOG_LEVEL_INFO, log);
+      cmd_within_mainloop = CMD_RESET_DEFAULT;
     }
 
     WebServer.send(200, "text/html", "OK");
@@ -427,8 +435,8 @@ void handle_config() {
   addHeader(true, reply);
 
   reply += F("<form name='frmselect' method='post'><table>");
-  reply += F("<TH>Main Settings<TH><TR><TD>Name:<TD><input type='text' name='name' value='");
-  Settings.Name[25] = 0;
+  reply += F("<TH>System Settings<TH><TR><TD>Device Name:<TD><input type='text' name='name' value='");
+   Settings.Name[25] = 0;
   reply += Settings.Name;
   reply += F("'><TR><TD>Admin Password:<TD><input type='text' name='password' value='");
   SecuritySettings.Password[25] = 0;
@@ -441,8 +449,8 @@ void handle_config() {
   reply += F("'><TR><TD>WPA AP Mode Key:<TD><input type='text' maxlength='63' name='apkey' value='");
   reply += SecuritySettings.WifiAPKey;
 
-  reply += F("'><TR><TD>Unit nr:<TD><input type='text' name='unit' value='");
-  reply += Settings.Unit;
+  //reply += F("'><TR><TD>Unit nr:<TD><input type='text' name='unit' value='");
+  //reply += Settings.Unit;
 
   reply += F("'><TR><TD>Protocol:");
   byte choice = Settings.Protocol;
@@ -463,7 +471,7 @@ void handle_config() {
     reply += F("</option>");
   }
   reply += F("</select>");
-  reply += F("<a class=\"button-link\" href=\"http://www.letscontrolit.com/wiki/index.php/EasyProtocols\" target=\"_blank\">?</a>");
+  //reply += F("<a class=\"button-link\" href=\"http://www.letscontrolit.com/wiki/index.php/EasyProtocols\" target=\"_blank\">?</a>");
 
 
   char str[20];
@@ -532,7 +540,7 @@ void handle_config() {
   else
     reply += F("<input type=checkbox name='deepsleep'>");
 
-  reply += F("<a class=\"button-link\" href=\"http://www.letscontrolit.com/wiki/index.php/SleepMode\" target=\"_blank\">?</a>");
+  //reply += F("<a class=\"button-link\" href=\"http://www.letscontrolit.com/wiki/index.php/SleepMode\" target=\"_blank\">?</a>");
 
   reply += F("<TR><TH>Optional Settings<TH>");
 
@@ -978,9 +986,9 @@ void handle_devices() {
 
     if (Settings.TaskDeviceNumber[index - 1] != 0 )
     {
-      reply += F("<a class=\"button-link\" href=\"http://www.letscontrolit.com/wiki/index.php/Plugin");
-      reply += Settings.TaskDeviceNumber[index - 1];
-      reply += F("\" target=\"_blank\">?</a>");
+      //reply += F("<a class=\"button-link\" href=\"http://www.letscontrolit.com/wiki/index.php/Plugin");
+      //reply += Settings.TaskDeviceNumber[index - 1];
+      //reply += F("\" target=\"_blank\">?</a>");
 
       reply += F("<TR><TD>Name:<TD><input type='text' maxlength='40' name='taskdevicename' value='");
       reply += ExtraTaskSettings.TaskDeviceName;
@@ -1084,8 +1092,8 @@ void handle_devices() {
             reply += ExtraTaskSettings.TaskDeviceValueDecimals[varNr];
             reply += F("'>");
 
-            if (varNr == 0)
-              reply += F("<a class=\"button-link\" href=\"http://www.letscontrolit.com/wiki/index.php/EasyFormula\" target=\"_blank\">?</a>");
+            //if (varNr == 0)
+            //  reply += F("<a class=\"button-link\" href=\"http://www.letscontrolit.com/wiki/index.php/EasyFormula\" target=\"_blank\">?</a>");
           }
         }
         else
@@ -1425,18 +1433,19 @@ void handle_tools() {
   reply += F("<form>");
   reply += F("<table><TH>Tools<TH>");
   reply += F("<TR><TD>System<TD><a class=\"button-link\" href=\"/?cmd=reboot\">Reboot</a>");
-  reply += F("<a class=\"button-link\" href=\"log\">Log</a>");
-  reply += F("<a class=\"button-link\" href=\"advanced\">Advanced</a><BR><BR>");
+  reply += F("<a class=\"button-link\" href=\"/?cmd=resetdefault\">Reset Factory</a><BR><BR>");
+  //reply += F("<a class=\"button-link\" href=\"log\">Log</a>");
+  //reply += F("<a class=\"button-link\" href=\"advanced\">Advanced</a><BR><BR>");
   reply += F("<TR><TD>Wifi<TD><a class=\"button-link\" href=\"/?cmd=wificonnect\">Connect</a>");
   reply += F("<a class=\"button-link\" href=\"/?cmd=wifidisconnect\">Disconnect</a>");
   reply += F("<a class=\"button-link\" href=\"/wifiscanner\">Scan</a><BR><BR>");
-  reply += F("<TR><TD>Interfaces<TD><a class=\"button-link\" href=\"/i2cscanner\">I2C Scan</a><BR><BR>");
-  reply += F("<TR><TD>Settings<TD><a class=\"button-link\" href=\"/upload\">Load</a>");
-  reply += F("<a class=\"button-link\" href=\"/download\">Save</a>");
+  //reply += F("<TR><TD>Interfaces<TD><a class=\"button-link\" href=\"/i2cscanner\">I2C Scan</a><BR><BR>");
+  //reply += F("<TR><TD>Settings<TD><a class=\"button-link\" href=\"/upload\">Load</a>");
+  //reply += F("<a class=\"button-link\" href=\"/download\">Save</a>");
   if (ESP.getFlashChipRealSize() > 524288)
   {
     reply += F("<TR><TD>Firmware<TD><a class=\"button-link\" href=\"/update\">Load</a>");
-    reply += F("<a class=\"button-link\" href=\"http://www.letscontrolit.com/wiki/index.php/EasyOTA\" target=\"_blank\">?</a>");
+    //reply += F("<a class=\"button-link\" href=\"http://www.letscontrolit.com/wiki/index.php/EasyOTA\" target=\"_blank\">?</a>");
   }
 #if FEATURE_SPIFFS
   reply += F("<a class=\"button-link\" href=\"/filelist\">List</a><BR><BR>");
@@ -1721,6 +1730,8 @@ boolean handle_json()
     reply += wdcounter / 2;
     reply += F(",\n\"Free RAM\": ");
     reply += ESP.getFreeHeap();
+    reply += F(",\n\"Flash\": ");
+    reply += ESP.getFlashChipRealSize() / 1024;
     reply += F("\n},\n");
   }
 
@@ -1761,7 +1772,11 @@ boolean handle_json()
         reply += F("\"");
         reply += ExtraTaskSettings.TaskDeviceValueNames[x];
         reply += F("\": ");
-        reply += UserVar[BaseVarIndex + x];
+//        reply += UserVar[BaseVarIndex + x];
+        if(UserVar[BaseVarIndex + x] && !isnan(UserVar[BaseVarIndex + x]))
+          reply += UserVar[BaseVarIndex + x];
+        else
+          reply += "\"\"";
         if (x < (Device[DeviceIndex].ValueCount - 1))
           reply += F(",");
         reply += F("\n");
@@ -2460,6 +2475,9 @@ void handle_setup() {
 
   if (WiFi.status() == WL_CONNECTED)
   {
+    // Do boardinit to reflect new settings.
+    boardInit();
+
     SaveSettings();
     IPAddress ip = WiFi.localIP();
     char host[20];
@@ -2483,6 +2501,7 @@ void handle_setup() {
   String ssid = WebServer.arg("ssid");
   String other = WebServer.arg("other");
   String password = WebServer.arg("pass");
+  String devname = WebServer.arg("devname");
 
   if (other.length() != 0)
   {
@@ -2494,12 +2513,20 @@ void handle_setup() {
   {
     strncpy(SecuritySettings.WifiKey, password.c_str(), sizeof(SecuritySettings.WifiKey));
     strncpy(SecuritySettings.WifiSSID, ssid.c_str(), sizeof(SecuritySettings.WifiSSID));
+    if(devname.equals(Settings.Name) == false)
+      Settings.BoardInited = false; // devname has changed, force to reconfig board settings.
+
+    if(devname.length() != 0) {
+      strncpy(Settings.Name, devname.c_str(), sizeof(Settings.Name));
+    } else {
+      strncpy(Settings.Name, "pkdev", sizeof(Settings.Name));
+    }    
     wifiSetupConnect = true;
     status = 1;
     refreshCount = 0;
   }
 
-  reply += F("<h1>Wifi Setup wizard</h1><BR>");
+  reply += F("<h1>PK Device Setup Wizard</h1><BR>");
   reply += F("<form name='frmselect' method='post'>");
 
   if (status == 0)  // first step, scan and show access points within reach...
@@ -2530,8 +2557,45 @@ void handle_setup() {
     reply += F("'><br><br>");
     reply += F("Password: <input type ='text' name='pass' value='");
     reply += password;
-    reply += F("'><br>");
+    reply += F("'><br><br>");
+    reply += F("<p>*** Please Select Device Type ***</p><br>");
+    //reply += F("<h1>PK Device Name</h1><BR>");
+    //reply += F("<label for='devname'>Device Name: </label><select name='devname'>");
+    reply += F("<select name='devname'>");
+    
+    // Max devName length is 26
+    String devList[] = {
+      F("pk-dev"),
+      F("pkPowerPlug"),
+      F("pkOneRelay"), 
+      F("pkTwoRelay"),
+      F("pkPirRelay"),
+      F("pkOneServo"),
+      F("pkTwoServo"),
+      F("pkTempHumid"),
+      F("pkTwoPwm"),
+      F("pkIr"),
+      F("pkDistance"),
+      F("pkWeight"),
+      F("pkLight"),
+      "",
+    };
 
+    for(int i = 0;; i++) {
+      if(devList[i] == "")
+        break;
+      reply += F("<option value='");
+      reply += devList[i];
+      //Serial.println(devList[i]);
+      reply += F("'");
+      if (devList[i] == Settings.Name) {
+        reply += F(" selected ");
+      }
+      reply += F(">");
+      reply += devList[i];
+      reply += F("</option>");
+    }
+    reply += F("</select><br><br><br>");
     reply += F("<input type='submit' value='Connect'>");
   }
 

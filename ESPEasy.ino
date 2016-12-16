@@ -73,13 +73,13 @@
 // You can always change these during runtime and save to eeprom
 // After loading firmware, issue a 'reset' command to load the defaults.
 
-#define DEFAULT_NAME        "newdevice"         // Enter your device friendly name
+#define DEFAULT_NAME        "pkdev"         // Enter your device friendly name
 #define DEFAULT_SSID        "ssid"              // Enter your network SSID
 #define DEFAULT_KEY         "wpakey"            // Enter your network WPA key
 #define DEFAULT_SERVER      "192.168.0.8"       // Enter your Domoticz Server IP address
 #define DEFAULT_PORT        8080                // Enter your Domoticz Server port value
 #define DEFAULT_DELAY       60                  // Enter your Send delay in seconds
-#define DEFAULT_AP_KEY      "configesp"         // Enter network WPA key for AP (config) mode
+#define DEFAULT_AP_KEY      "12345678"         // Enter network WPA key for AP (config) mode
 
 #define DEFAULT_USE_STATIC_IP   false           // true or false enabled or disabled set static IP
 #define DEFAULT_IP          "192.168.0.50"      // Enter your IP address
@@ -114,6 +114,7 @@
 
 // Defined by Perry.
 #define FEATURE_SYSINFO_BCAST            true
+#define FEATURE_MQTT_SSL                 true
 
 // ********************************************************************************
 //   DO NOT CHANGE ANYTHING BELOW THIS LINE
@@ -121,7 +122,7 @@
 #define ESP_PROJECT_PID           2015050101L
 #define ESP_EASY
 #define VERSION                             9
-#define BUILD                             147
+#define BUILD                             148
 #define BUILD_NOTES                        ""
 #define FEATURE_SPIFFS                  false
 
@@ -145,6 +146,7 @@
 #define LOG_LEVEL_DEBUG_MORE                4
 
 #define CMD_REBOOT                         89
+#define CMD_RESET_DEFAULT                  90
 #define CMD_WIFI_DISCONNECT               135
 
 #define DEVICES_MAX                        64
@@ -189,6 +191,7 @@
 #define SENSOR_TYPE_SWITCH                 10
 #define SENSOR_TYPE_DIMMER                 11
 #define SENSOR_TYPE_LONG                   20
+#define SENSOR_TYPE_REPORTER               40
 #define SENSOR_TYPE_CUSTOM                 99
 
 #define PLUGIN_INIT_ALL                     1
@@ -210,6 +213,7 @@
 #define PLUGIN_UDP_IN                      17
 #define PLUGIN_CLOCK_IN                    18
 #define PLUGIN_TIMER_IN                    19
+#define PLUGIN_WRITEJSON                   30
 
 #define VALUE_SOURCE_SYSTEM                 1
 #define VALUE_SOURCE_SERIAL                 2
@@ -264,7 +268,11 @@ Servo myservo1;
 Servo myservo2;
 
 // MQTT client
+#if FEATURE_MQTT_SSL
+WiFiClientSecure mqtts;
+#endif
 WiFiClient mqtt;
+
 PubSubClient MQTTclient(mqtt);
 
 // WebServer
@@ -353,7 +361,9 @@ struct SettingsStruct
   unsigned long ConnectionFailuresThreshold;
   int16_t       TimeZone;
   boolean       MQTTRetainFlag;
-  boolean       InitSPI; 
+  boolean       InitSPI;
+  boolean       BoardInited;
+  boolean       SecureProtocol;
 } Settings;
 
 struct ExtraTaskSettingsStruct
@@ -380,6 +390,7 @@ struct EventStruct
   String String1;
   String String2;
   byte *Data;
+  JsonObject *root; // PLUGIN_WRITEJSON
 };
 
 struct LogStruct
@@ -415,6 +426,7 @@ struct ProtocolStruct
   boolean usesPassword;
   int defaultPort;
   boolean usesTemplate;
+  boolean useSecure;
 } Protocol[CPLUGIN_MAX];
 
 struct NodeStruct
@@ -471,6 +483,9 @@ boolean AP_Mode = false;
 byte cmd_within_mainloop = 0;
 unsigned long connectionFailures;
 unsigned long wdcounter = 0;
+// Used to determine whether reset buttom has been pressed for reset default purpose.
+unsigned long resetCount = 0;
+byte statusLedState = 0; // 0: boot wo wifi, 1: boot with wifi, 2: other
 
 #if FEATURE_ADC_VCC
 float vcc = -1.0;
@@ -503,6 +518,8 @@ unsigned long flashWrites = 0;
 
 String eventBuffer = "";
 
+String clientIdString = "";
+
 /*********************************************************************************************\
  * SETUP
 \*********************************************************************************************/
@@ -521,9 +538,10 @@ void setup()
   fileSystemCheck();
 #endif
 
+  LoadSettings(); // load flash settings first before emergencyReset
+
   emergencyReset();
 
-  LoadSettings();
   if (strcasecmp(SecuritySettings.WifiSSID, "ssid") == 0)
     wifiSetup = true;
 
@@ -555,6 +573,8 @@ void setup()
     if (Settings.Build != BUILD)
       BuildFixes();
 
+    boardInit();
+    
     String log = F("\nINIT : Booting Build nr:");
     log += BUILD;
     addLog(LOG_LEVEL_INFO, log);
@@ -562,12 +582,14 @@ void setup()
     if (Settings.UseSerial && Settings.SerialLogLevel >= LOG_LEVEL_DEBUG_MORE)
       Serial.setDebugOutput(true);
 
+    hardwareInit();
+    PluginInit();
+    statusLED(); // Turn on LED first if has LED
+
     WiFi.persistent(false); // Do not use SDK storage of SSID/WPA parameters
     WifiAPconfig();
     WifiConnect(3);
 
-    hardwareInit();
-    PluginInit();
     CPluginInit();
 
     WebServerInit();
@@ -713,6 +735,20 @@ void run10TimesPerSecond()
     rulesProcessing(eventBuffer);
     eventBuffer = "";
   }
+
+  // Use GPIO0 as reset button. default output high. when pushing, output low.
+  // TODO: Use hardware defintion to define which pin is reset button.
+  byte resetBtnState = digitalRead(0);
+  if(!resetBtnState) {
+    resetCount++;
+    if(resetCount >= 50) {
+      Serial.println("Factory reset button has been pressed for 5 second");
+      ResetFactory();
+    }
+  } else {
+    resetCount = 0;
+  }
+  
   elapsed = micros() - start;
 }
 
@@ -739,6 +775,11 @@ void runOncePerSecond()
           WifiDisconnect();
           break;
         }
+      case CMD_RESET_DEFAULT:
+        {
+          ResetFactory();
+          break;
+        }        
       case CMD_REBOOT:
         {
           ESP.reset();
@@ -1019,7 +1060,7 @@ void backgroundtasks()
 
   WebServer.handleClient();
   MQTTclient.loop();
-  statusLED(false);
+  statusLED();
   checkUDP();
   yield();
 }

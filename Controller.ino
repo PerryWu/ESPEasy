@@ -49,9 +49,9 @@ void callback(char* c_topic, byte* b_payload, unsigned int length) {
   char c_payload[256];
   strncpy(c_payload,(char*)b_payload,length);
   c_payload[length] = 0;
-  statusLED(true);
-
+  //statusLED(true);
   sprintf_P(log, PSTR("%s%s"), "MQTT : Topic: ", c_topic);
+  Serial.println(log);
   addLog(LOG_LEVEL_DEBUG, log);
   sprintf_P(log, PSTR("%s%s"), "MQTT : Payload: ", c_payload);
   addLog(LOG_LEVEL_DEBUG, log);
@@ -69,13 +69,21 @@ void callback(char* c_topic, byte* b_payload, unsigned int length) {
 \*********************************************************************************************/
 void MQTTConnect()
 {
+#if FEATURE_MQTT_SSL
+  if(Settings.SecureProtocol)
+    MQTTclient.setClient(mqtts);
+  else
+    MQTTclient.setClient(mqtt);    
+#else
+  MQTTclient.setClient(mqtt);    
+#endif  
+  
   IPAddress MQTTBrokerIP(Settings.Controller_IP);
   MQTTclient.setServer(MQTTBrokerIP, Settings.ControllerPort);
   MQTTclient.setCallback(callback);
 
   // MQTT needs a unique clientname to subscribe to broker
-  String clientid = "ESPClient";
-  clientid += Settings.Unit;
+  String clientid = clientIdString;
   String subscribeTo = "";
 
   String LWTTopic = Settings.MQTTsubscribe;
@@ -99,6 +107,14 @@ void MQTTConnect()
 
     if (MQTTresult)
     {
+      // Add verify server fingerprint sample codes.
+      /*
+      #if FEATURE_MQTT_SSL
+      const char* fingerprint = F("26 96 1C 2A 51 07 FD 15 80 96 93 AE F7 32 CE B9 0D 01 55 C4");
+      boolean verified = secureClient.verify(fingerprint, "servername");
+      Serial.print(verified ? "verified tls!" : "unverified tls");
+      #endif
+      */
       log = F("MQTT : Connected to broker");
       addLog(LOG_LEVEL_INFO, log);
       subscribeTo = Settings.MQTTsubscribe;
@@ -167,8 +183,11 @@ void SendStatus(byte source, String status)
  * Send status info back to channel where request came from
 \*********************************************************************************************/
 void MQTTStatus(String& status)
-{
-  String pubname = Settings.MQTTsubscribe;
+{ 
+  // XXX: Perry: don't know why oroginal code use Settings.MQTTSubscribe
+  // to send bak request. Subscribe should only be used for others to send
+  // command to device. So, Change to use MQTTpublish here.
+  String pubname = Settings.MQTTpublish;
   pubname.replace("/#", "/status");
   pubname.replace("%sysname%", Settings.Name);
   MQTTclient.publish(pubname.c_str(), status.c_str(),Settings.MQTTRetainFlag);

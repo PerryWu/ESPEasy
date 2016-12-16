@@ -72,7 +72,7 @@ boolean C010_Send(struct EventStruct *event, byte varIndex, float value, unsigne
   sprintf_P(log, PSTR("%s%s using port %u"), "UDP  : sending to ", host, Settings.ControllerPort);
   addLog(LOG_LEVEL_DEBUG, log);
 
-  statusLED(true);
+  //statusLED(true);
 
   if (ExtraTaskSettings.TaskDeviceValueNames[0][0] == 0)
     PluginCall(PLUGIN_GET_DEVICEVALUENAMES, event, dummyString);

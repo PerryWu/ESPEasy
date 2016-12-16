@@ -233,27 +233,47 @@ boolean timeOut(unsigned long timer)
 /********************************************************************************************\
   Status LED
   \*********************************************************************************************/
-void statusLED(boolean traffic)
+void statusLED()
 {
   if (Settings.Pin_status_led == -1)
     return;
 
   static unsigned long timer = 0;
   static byte currentState = 0;
-
-  if (traffic)
-  {
-    currentState = HIGH;
-    digitalWrite(Settings.Pin_status_led, currentState); // blink off
-    timer = millis() + 100;
-  }
-
-  if (timer == 0 || millis() > timer)
-  {
-    timer = 0;
-    byte state = HIGH;
-    if (WiFi.status() == WL_CONNECTED)
-      state = LOW;
+  byte state;
+  
+  if (timer == 0 || millis() > timer) {
+    switch(statusLedState) {
+      case 1: // Keep Light on
+      {
+        timer = millis() + 1000;
+        state = HIGH;
+        break;
+      }
+      case 2: // 1s on, 1s off
+      {
+        //Serial.println(timer);
+        //Serial.println(timer >> 10);
+        if(((timer >> 10) & 0x1) == 0) {
+          state = LOW;
+        } else {
+          state = HIGH;
+        }
+        //Serial.println(state);
+        timer = millis() + 1024;
+        break;
+      }
+      case 0: // 0.1s on 0.1s off
+      {
+        if(((timer >> 7) & 0x1) == 0) {
+          state = LOW;
+        } else {
+          state = HIGH;
+        }
+        timer = millis() + 128;
+        break;
+      }
+    }
 
     if (currentState != state)
     {
@@ -851,6 +871,7 @@ void ZeroFillFlash()
         interrupts();
         Serial.print(F("FLASH: Zero Fill Sector: "));
         Serial.println(_sector);
+        statusLED();
         delay(10);
       }
   }
@@ -875,6 +896,7 @@ void EraseFlash()
       interrupts();
       Serial.print(F("FLASH: Erase Sector: "));
       Serial.println(_sector);
+      statusLED();
       delay(10);
     }
     interrupts();
@@ -917,6 +939,13 @@ void ResetFactory(void)
   bootCount++;
   saveToRTC(bootCount);
 
+  //Name is important to pillakloud devices
+  char tempName[26];
+  if(strlen(Settings.Name) > 0 && strlen(Settings.Name) < 26)
+    strcpy_P(tempName, Settings.Name);
+  else
+    strcpy_P(tempName, DEFAULT_NAME);
+
 #if FEATURE_SPIFFS
   File f = SPIFFS.open("config.txt", "w");
   if (f)
@@ -936,6 +965,7 @@ void ResetFactory(void)
   f = SPIFFS.open("rules.txt", "w");
   f.close();
 #else
+  statusLedState = 2;
   EraseFlash();
   ZeroFillFlash();
 #endif
@@ -965,11 +995,11 @@ void ResetFactory(void)
   str2ip((char*)DEFAULT_SERVER, Settings.Controller_IP);
   Settings.ControllerPort      = DEFAULT_PORT;
   Settings.Delay           = DEFAULT_DELAY;
-  Settings.Pin_i2c_sda     = 4;
-  Settings.Pin_i2c_scl     = 5;
+  Settings.Pin_i2c_sda     = -1;
+  Settings.Pin_i2c_scl     = -1;
   Settings.Pin_status_led  = -1;
   Settings.Protocol        = DEFAULT_PROTOCOL;
-  strcpy_P(Settings.Name, PSTR(DEFAULT_NAME));
+  strcpy_P(Settings.Name, tempName);
   Settings.SerialLogLevel  = 2;
   Settings.WebLogLevel     = 2;
   Settings.BaudRate        = 115200;
@@ -977,6 +1007,8 @@ void ResetFactory(void)
   Settings.deepSleep = false;
   Settings.CustomCSS = false;
   Settings.InitSPI = false;
+  Settings.BoardInited = false;
+  Settings.SecureProtocol = false;
   for (byte x = 0; x < TASKS_MAX; x++)
   {
     Settings.TaskDevicePin1[x] = -1;
@@ -990,7 +1022,7 @@ void ResetFactory(void)
   Settings.Build = BUILD;
   Settings.UseSerial = true;
   SaveSettings();
-  delay(1000);
+  delay(3000);
   WiFi.persistent(true); // use SDK storage of SSID/WPA parameters
   WiFi.disconnect(); // this will store empty ssid/wpa into sdk storage
   WiFi.persistent(false); // Do not use SDK storage of SSID/WPA parameters

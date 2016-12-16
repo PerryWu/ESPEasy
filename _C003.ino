@@ -47,7 +47,7 @@ boolean CPlugin_003(byte function, struct EventStruct *event, String& string)
           addLog(LOG_LEVEL_ERROR, log);
           return false;
         }
-        statusLED(true);
+        //statusLED(true);
         if (connectionFailures)
           connectionFailures--;
 

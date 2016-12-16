@@ -81,6 +81,37 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
     success = true;
     break;
   }
+
+  case PLUGIN_WRITEJSON:
+  {
+    JsonObject& root = *(event->root);
+    if(event->root == NULL)
+      break;
+    bool hit = false;
+    String command = (const char *)root["event"];
+    if(command == F("pkpmwritereg")) {
+      hit = true;
+      string = "pkpmwritereg,";
+      string += (const char *)root["regAddr"];
+      string += ",";
+      string += (const char *)root["regData"];
+    }
+    if(command == F("pkpmreadreg")) {
+      hit = true;
+      string = "pkpmreadreg,";
+      string += (const char *)root["regAddr"];
+      string += ",";
+      string += (const char *)root["regLen"];
+    }
+    Serial.print("command: ");
+    Serial.println(command);
+    Serial.println(string);
+
+    if(hit == false)
+      break;
+    // Pass through to PLUGIN_WRITE to handle command
+  }
+
   case PLUGIN_WRITE:
   { // string will be formatted: cmd,par1,par2,par3...
     String log = "";

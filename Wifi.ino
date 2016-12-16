@@ -3,11 +3,14 @@
 //********************************************************************************
 void WifiAPconfig()
 {
+  uint8_t mac[] = {0, 0, 0, 0, 0, 0};
+  uint8_t* macread = WiFi.macAddress(mac);
+
   // create and store unique AP SSID/PW to prevent ESP from starting AP mode with default SSID and No password!
   char ap_ssid[20];
   ap_ssid[0] = 0;
-  strcpy(ap_ssid, "ESP_");
-  sprintf_P(ap_ssid, PSTR("%s%u"), ap_ssid, Settings.Unit);
+  strcpy(ap_ssid, "PK_");
+  sprintf_P(ap_ssid, PSTR("%s%02x%02x%02x"), ap_ssid, macread[3], macread[4], macread[5]);
   // setup ssid for AP Mode when needed
   WiFi.softAP(ap_ssid, SecuritySettings.WifiAPKey);
   // We start in STA mode
@@ -39,7 +42,8 @@ void WifiAPMode(boolean state)
 boolean WifiConnect(byte connectAttempts)
 {
   String log = "";
-    
+  boolean success = false;
+
   char hostName[sizeof(Settings.Name)];
   strcpy(hostName,Settings.Name);
   for(byte x=0; x< sizeof(hostName); x++)
@@ -66,6 +70,7 @@ boolean WifiConnect(byte connectAttempts)
   {
     if ((SecuritySettings.WifiSSID[0] != 0)  && (strcasecmp(SecuritySettings.WifiSSID, "ssid") != 0))
     {
+      byte resetBtnState;
       for (byte tryConnect = 1; tryConnect <= connectAttempts; tryConnect++)
       {
         log = F("WIFI : Connecting... ");
@@ -79,6 +84,14 @@ boolean WifiConnect(byte connectAttempts)
           
         for (byte x = 0; x < 20; x++)
         {
+          resetBtnState = digitalRead(0);
+          if(!resetBtnState)
+           resetCount++;
+          else
+            resetCount = 0;
+          if(resetCount > 4)
+            ResetFactory();
+
           if (WiFi.status() != WL_CONNECTED)
           {
             delay(500);
@@ -90,6 +103,8 @@ boolean WifiConnect(byte connectAttempts)
         {
           log = F("WIFI : Connected!");
           addLog(LOG_LEVEL_INFO, log);
+          success = true;
+          statusLedState = 1;
           break;
         }
         else
@@ -122,8 +137,10 @@ boolean WifiConnect(byte connectAttempts)
       addLog(LOG_LEVEL_INFO, log);
       NC_Count = 1;
       WifiAPMode(true);
+      success = true;
     }
   }
+  return success;
 }
 
 
@@ -182,6 +199,7 @@ void WifiCheck()
 
   if (WiFi.status() != WL_CONNECTED)
   {
+    statusLedState = 0;
     NC_Count++;
     if (NC_Count > 2)
     {
@@ -194,6 +212,8 @@ void WifiCheck()
   }
   else
   {
+    if(statusLedState == 0)
+      statusLedState = 1;
     C_Count++;
     NC_Count = 0;
     if (C_Count > 2) // close AP after timeout if a Wifi connection is established...
