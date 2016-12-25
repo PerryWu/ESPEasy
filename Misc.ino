@@ -1008,6 +1008,7 @@ void ResetFactory(void)
   Settings.CustomCSS = false;
   Settings.InitSPI = false;
   Settings.BoardInited = false;
+  Settings.MQTTRetainFlag = true; // default as true.
   Settings.SecureProtocol = false;
   for (byte x = 0; x < TASKS_MAX; x++)
   {

@@ -23,7 +23,6 @@ void boardInit()
 
   if(strcasecmp_P(Settings.Name, PSTR("pkPowerPlug")) == 0) {
     //Settings.Protocol = 0;
-
     // Have LED
     Settings.Pin_status_led = 16;
     Settings.Protocol = 15;
@@ -38,8 +37,9 @@ void boardInit()
     Settings.TaskDeviceSendData[0] = true;
     Settings.TaskDeviceTimer[0] = 60;
     Settings.BoardInited = true;
+
     LoadTaskSettings(0);
-    strcpy(ExtraTaskSettings.TaskDeviceName, F("Power Plug"));
+    strcpy_P(ExtraTaskSettings.TaskDeviceName, PSTR("Power Plug"));
     SaveTaskSettings(0);
     
     // Task 1 should be a pkswitch

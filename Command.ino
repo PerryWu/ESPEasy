@@ -19,6 +19,106 @@ void ExecuteCommand(byte source, const char *Line)
   // ****************************************
   // commands for debugging
   // ****************************************
+  if (strcasecmp_P(Command, PSTR("test")) == 0)
+  {
+    uint8_t buf[512];
+    success = true;
+    uint32_t i;
+
+    String pubname = Settings.MQTTpublish;
+    for(i = 0; i < Par1; i++) {
+      buf[i] = i&0xff;
+    }
+    //if (!MQTTclient.publish(pubname.c_str(), buf, 7, Settings.MQTTRetainFlag))
+    if (!MQTTclient.publish(pubname.c_str(), buf, Par1, true))
+    {
+      Serial.println("MQTT publish failed");
+    } else {
+      Serial.println("MQTT publish success");
+    }
+  }
+
+  if (strcasecmp_P(Command, PSTR("readpower")) == 0)
+  {
+    success = true;
+    uint32_t readData;
+    int readLen;
+    String tmp;
+    readLen = rn8209_readReg(&readData, 0x22, 3);
+    tmp = "0x22 IARMS: " + String(readData, HEX) + " " + String(readData);
+    Serial.println(tmp);
+
+    readLen = rn8209_readReg(&readData, 0x24, 3);
+    tmp = "0x24 URMS: " + String(readData, HEX) + " " + String(readData);
+    Serial.println(tmp);
+
+    readLen = rn8209_readReg(&readData, 0x25, 2);
+    tmp = "0x25 UFreq: " + String(readData, HEX) + " " + String(readData);
+    Serial.println(tmp);
+
+    readLen = rn8209_readReg(&readData, 0x26, 4);
+    tmp = "0x26 PowerPA: " + String(readData, HEX) + " " + String(readData);
+    Serial.println(tmp);
+
+    readLen = rn8209_readReg(&readData, 0x29, 3);
+    tmp = "0x29 EnergyP: " + String(readData, HEX) + " " + String(readData);
+    Serial.println(tmp);
+  }
+
+  if (strcasecmp_P(Command, PSTR("readstress")) == 0)
+  {
+    success = true;
+    char std[4] ={0x00, 0x09, 0x82,0x00};
+    uint32_t readData, i;
+    int readLen;
+    char regAddr = 0x7f;
+
+    Serial.print("Start Read Stress: (16 read one ms)");
+    for(i = 0; i < Par1; i++) {
+      if((i & 0xf) == 0) {
+        Serial.println(millis());
+      }
+      readLen = rn8209_readReg(&readData, regAddr & 0x7f, 3);
+      if(readLen != 3) {
+        Serial.print("Error read in :");
+        Serial.println(i);
+      }
+      if(readData != *((uint32_t *) std)) {
+        Serial.print("Error cmp in :");
+        Serial.println(i);
+      }
+    }
+  }
+
+  if (strcasecmp_P(Command, PSTR("writestress")) == 0)
+  {
+    success = true;
+    uint32_t dataValue, readData;
+    int readLen;
+    unsigned long i;
+    char regAddr = 0x2;
+
+    rn8209_writeEnable();
+    Serial.print("Start Write Stress: (16 read one ms)");
+    for(i = 0; i < Par1; i++) {
+      if((i & 0xf) == 0) {
+        Serial.println(millis());
+      }
+      dataValue = i;
+      rn8209_writeReg(dataValue, regAddr, 2, false);
+      readLen = rn8209_readReg(&readData, regAddr, 2);
+      if(readLen != 2) {
+        Serial.print("Error read in :");
+        Serial.println(i);
+      }
+      if(readData != dataValue) {
+        String tmp = "Error cmp in readData " + String(readData,HEX) + " dataValue " + String(dataValue, HEX);
+        Serial.println(tmp);
+      }
+    }
+    rn8209_writeDisable();
+  }
+
   if (strcasecmp_P(Command, PSTR("cmd")) == 0)
   {
     String cmd = Line;

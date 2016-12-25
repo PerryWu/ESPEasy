@@ -6,7 +6,16 @@
 #define PLUGIN_ID_063         63
 #define PLUGIN_NAME_063       "PK Power Plug"
 #define PLUGIN_VALUENAME1_063 "PKPowerPlug"
+
 //#define DEBUG_063
+#define MAXRECORD 14
+struct {
+  uint32_t iarms;
+  uint32_t urms;
+  uint32_t ufreq;
+  uint32_t powerpa;
+  uint32_t energyp;
+} PowerRecords[MAXRECORD];
 
 boolean Plugin_063(byte function, struct EventStruct *event, String& string)
 {
@@ -46,13 +55,53 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
 
   case PLUGIN_WEBFORM_LOAD:
   {
-    // I might use this to do calibaration stuff...
+    // do calibaration stuff...
+    uint32_t value;
+    char tmpString[128];
+    // Show registers
+    if(Settings.TaskDevicePin1[event->TaskIndex] != -1 && Settings.TaskDevicePin2[event->TaskIndex] != -1) {
+      rn8209_readReg(&value, 0x22, 3);
+      sprintf_P(tmpString, PSTR("<TR><TD>IARMS Value:<TD><p>%d</p>"), value);
+      string += tmpString;
+      rn8209_readReg(&value, 0x24, 3);
+      sprintf_P(tmpString, PSTR("<TR><TD>URMS Value:<TD><p>%d</p>"), value);
+      string += tmpString;
+      rn8209_readReg(&value, 0x25, 2);
+      sprintf_P(tmpString, PSTR("<TR><TD>UFREQ Value:<TD><p>%d</p>"), value);
+      string += tmpString;
+      rn8209_readReg(&value, 0x26, 4);
+      sprintf_P(tmpString, PSTR("<TR><TD>POWERP Value:<TD><p>%d</p>"), value);
+      string += tmpString;
+      rn8209_readReg(&value, 0x29, 3);
+      sprintf_P(tmpString, PSTR("<TR><TD>ENERGY Value:<TD><p>%d</p>"), value);
+      string += tmpString;
+    }
+
+    // Update K values
+    sprintf_P(tmpString, PSTR("<TR><TD>IARMS K:<TD><input type='text' name='plugin_063_iarms_k' value='%u'>"), Settings.TaskDevicePluginConfigLong[event->TaskIndex][0]);
+    string += tmpString;
+    sprintf_P(tmpString, PSTR("<TR><TD>URMS K:<TD><input type='text' name='plugin_063_urms_k' value='%u'>"), Settings.TaskDevicePluginConfigLong[event->TaskIndex][1]);
+    string += tmpString;
+    sprintf_P(tmpString, PSTR("<TR><TD>UFREQ K:<TD><input type='text' name='plugin_063_ufreq_k' value='%u'>"), Settings.TaskDevicePluginConfigLong[event->TaskIndex][2]);
+    string += tmpString;
+    sprintf_P(tmpString, PSTR("<TR><TD>POWERP K:<TD><input type='text' name='plugin_063_powerp_k' value='%u'>"), Settings.TaskDevicePluginConfigLong[event->TaskIndex][3]);
+    string += tmpString;
+    success = true;
     break;
   }
 
   case PLUGIN_WEBFORM_SAVE:
   {
-    // I might use this to do calibaration stuff...
+    Serial.println(event->TaskIndex);
+    // do calibaration stuff...
+    String input = WebServer.arg("plugin_063_iarms_k");
+    Settings.TaskDevicePluginConfigLong[event->TaskIndex][0] = input.toInt();
+    input = WebServer.arg("plugin_063_urms_k");
+    Settings.TaskDevicePluginConfigLong[event->TaskIndex][1] = input.toInt();
+    input = WebServer.arg("plugin_063_ufreq_k");
+    Settings.TaskDevicePluginConfigLong[event->TaskIndex][2] = input.toInt();
+    input = WebServer.arg("plugin_063_powerp_k");
+    Settings.TaskDevicePluginConfigLong[event->TaskIndex][3] = input.toInt();
     break;
   }
 
@@ -72,10 +121,34 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
     }
     swSer->begin(4800);
     swSer->setParity(1);
+
     success = true;
     break;
   }
 
+  case PLUGIN_ONCE_A_SECOND:
+  {
+    if (!MQTTclient.connected()) {
+      Serial.println("MQTT is not connected, skip this reading!");
+      break;
+    }
+
+    // Read all power info here each time 14 rounds!
+    for(int i = 0; i < MAXRECORD; i++) {
+      rn8209_readReg(&PowerRecords[i].iarms, 0x22, 3);
+      PowerRecords[i].iarms *= Settings.TaskDevicePluginConfigLong[event->TaskIndex][0];
+      rn8209_readReg(&PowerRecords[i].urms, 0x24, 3);
+      PowerRecords[i].urms *= Settings.TaskDevicePluginConfigLong[event->TaskIndex][1];
+      rn8209_readReg(&PowerRecords[i].ufreq, 0x25, 2);
+      PowerRecords[i].ufreq *= Settings.TaskDevicePluginConfigLong[event->TaskIndex][2];
+      rn8209_readReg(&PowerRecords[i].powerpa, 0x26, 4);
+      PowerRecords[i].powerpa *= Settings.TaskDevicePluginConfigLong[event->TaskIndex][3];
+      rn8209_readReg(&PowerRecords[i].energyp, 0x29, 3);
+    }
+    MQTTStatusBinary((char *)PowerRecords, sizeof(PowerRecords));
+    success = true;
+    break;
+  }
   case PLUGIN_TEN_PER_SECOND:
   {
     success = true;
@@ -128,28 +201,30 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
     if (command == F("pkpmwritereg"))
     {
       char regAddr = 0;
-      char regData[8];
+      uint32_t regData;
       int regLen;
 
       if (GetArgv(inputs, TmpStr1, 2)) regAddr = strtoul(TmpStr1, NULL, 16);
-      if (GetArgv(inputs, TmpStr1, 3)) regLen = strToHexStr(TmpStr1, regData);
+      //if (GetArgv(inputs, TmpStr1, 3)) regLen = strToHexStr(TmpStr1, regData);
+      regData = event->Par2;
+      regLen = event->Par3;
 
       if(regLen) {  
         rn8209_writeEnable();
         rn8209_writeReg(regData, regAddr, regLen, true);
         rn8209_writeDisable();
-        log = String(F("PKPowerPlug   : RegAddr ")) + String(regAddr, HEX) + String(F(" Set to ")) + hexstrToString(regData, regLen);
+        log = String(F("PKPowerPlug   : RegAddr ")) + String(regAddr, HEX) + String(F(" Set to ")) + String(regData, HEX);
         addLog(LOG_LEVEL_INFO, log);
 
-        char data[8];
-        int dataLen = 0;
-        dataLen = rn8209_readReg(data, regAddr, regLen);
-        if(dataLen) {
+        uint32_t readData;
+        int readLen = 0;
+        readLen = rn8209_readReg(&readData, regAddr, regLen);
+        if(readLen) {
           String tmp = "";
           tmp += F("{\"regAddr\":\"");
           tmp += String(regAddr);
           tmp += F("\", \"regData\":\"");
-          tmp += hexstrToString(data, regLen);
+          tmp += String(readData, HEX);
           tmp += F("\"}");
           SendStatus(event->Source, getReportJson(event->idx, "pkPmRegData", (char *)tmp.c_str()));
         } else {
@@ -166,22 +241,23 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
       int regLen = 0;
 
       if (GetArgv(inputs, TmpStr1, 2)) regAddr = strtoul(TmpStr1, NULL, 16);
-      if (GetArgv(inputs, TmpStr1, 3)) regLen = strtoul(TmpStr1, NULL, 10);
+      //if (GetArgv(inputs, TmpStr1, 3)) regLen = strtoul(TmpStr1, NULL, 10);
+      regLen = event->Par2;
 
-      char regData[8];
-      int dataLen = 0;
+      uint32_t readData;
+      int readLen = 0;
       Serial.print("regAddr: ");
       Serial.print(regAddr, HEX);
       Serial.print(" regLen: ");
       Serial.println(regLen);
 
-      dataLen = rn8209_readReg(regData, regAddr, regLen);
-      if(dataLen) {
+      readLen = rn8209_readReg(&readData, regAddr, regLen);
+      if(readLen) {
         String tmp = "";
         tmp += F("{\"regAddr\":\"");
         tmp += String(regAddr, HEX);
         tmp += F("\", \"regData\":\"");
-        tmp += hexstrToString(regData, regLen);
+        tmp += String(readData, HEX);
         tmp += F("\"}");
         SendStatus(event->Source, getReportJson(event->idx, "pkPmRegData", (char *)tmp.c_str()));
       } else {
@@ -197,28 +273,31 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
 }
 
 void rn8209_writeEnable() {
-  char data[1] = {0xE5};
-  rn8209_writeReg(data, 0xEA, 1, 0);
+  char data[4] = {0xE5,0,0,0};
+  rn8209_writeReg(*(uint32_t *) data, 0xEA, 1, 0);
 }
 
 void rn8209_writeDisable() {
-  char data[1] = {0xDC};
-  rn8209_writeReg(data, 0xEA, 1, 0);
+  char data[4] = {0xDC,0,0,0};
+  rn8209_writeReg(*(uint32_t *) data, 0xEA, 1, 0);
 }
 
-int rn8209_writeReg(char *src, char regAddr, int len, bool verify) {
+int rn8209_writeReg(uint32_t srcData, char regAddr, int regLen, bool verify) {
   int retryCnt = 2;
   int bufLen;
   char cksum;
+  uint32_t writeData = htonl(srcData);
+  char *src, *dataPtr = (char *)&writeData;
+  src = dataPtr + 4 - regLen;
 
 #ifdef DEBUG_063
   Serial.print("[rn8209_writeReg] regAddr: ");
   Serial.print(regAddr, HEX);
   Serial.print(" regLen: ");
-  Serial.print(len);
+  Serial.print(regLen);
 
   Serial.print(" data: ");
-  printBuf(src, len);
+  printBuf(src, regLen);
 #endif
 
   regAddr |= 0x80;
@@ -229,7 +308,7 @@ int rn8209_writeReg(char *src, char regAddr, int len, bool verify) {
     cksum = regAddr;
     swSer->write(regAddr);
     delay(1);
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < regLen; i++) {
       swSer->write(src[i]);
       cksum += src[i];
       delay(1);
@@ -243,20 +322,20 @@ int rn8209_writeReg(char *src, char regAddr, int len, bool verify) {
 #endif
 
     if (verify) {
-      char tmp[8];
-      int dataLen;
-      dataLen = rn8209_readReg(tmp, regAddr & 0x7f, len);
-      if (dataLen == 0) {
+      uint32_t readData;
+      int readLen;
+      readLen = rn8209_readReg(&readData, regAddr & 0x7f, regLen);
+      if (readLen != regLen) {
         Serial.println("[rn8209_writeReg] failed to get data to verify");
         continue;
       } else {
-        if((long) *src != (long) *tmp) {
+        if(readData != srcData) {
 #ifdef DEBUG_063        
           Serial.println("[rn8209_writeReg] setValue != readValue");
-          Serial.print("setValue: ");
-          Serial.print((long) *src));
-          Serial.print(" readValue: ");
-          Serial.println((long) *tmp);
+          Serial.print("srcData: ");
+          Serial.print(srcData, HEX);
+          Serial.print(" readData: ");
+          Serial.println(readData, HEX);
 #endif
           continue;
         }
@@ -266,18 +345,20 @@ int rn8209_writeReg(char *src, char regAddr, int len, bool verify) {
   }
 }
 
-int rn8209_readReg(char *dst, char regAddr, int len) {
+int rn8209_readReg(uint32_t *dstData, char regAddr, int regLen) {
   int retryCnt = 2;
   int bufLen;
-  char cksum;
+  char cksum, readByte;
+  char *dst = ((char *) dstData) + 4 - regLen;
+  *dstData = 0; // reset
 
 #ifdef DEBUG_063
   Serial.print("[rn8209_readReg] regAddr: ");
   Serial.print(regAddr, HEX);
   Serial.print(" regLen: ");
-  Serial.println(len);
+  Serial.println(regLen);
 #endif
-
+  ESP.wdtFeed();
   swSer->listen();
   while (retryCnt-- > 0) {
     // initialize variables
@@ -287,27 +368,31 @@ int rn8209_readReg(char *dst, char regAddr, int len) {
     delay(20);
 
     while (swSer->available() > 0) {
-      dst[bufLen] = swSer->read();
-      cksum += dst[bufLen];
+      readByte = swSer->read();
+      cksum += readByte;
+      if(bufLen < regLen)
+        dst[bufLen] = readByte;
       bufLen++;
-      if (bufLen >= len + 1) // including checksum
+      if (bufLen >= regLen + 1) // including checksum
         break;
     }
-    if (bufLen != len + 1) {
+    if (bufLen != regLen + 1) {
       Serial.println("[rn8209_readReg] Get fewer bytes");
       continue;
     }
     cksum = ~cksum;
     if (!cksum) {
       //Serial.println("[rn8209_readReg] checksum is correct");
-      dst[len] = 0; // remove checksum.
+      // Change the order
+      *dstData = htonl(*dstData);
       swSer->stopListening();
-      return len;
+      return regLen;
     } else {
-      //Serial.println("[rn8209_readReg] checksum is NOT correct");
+      Serial.println("[rn8209_readReg] checksum is NOT correct");
       continue;
     }
   }
+  Serial.println("[rn8209_readReg] read was failed");
   swSer->stopListening();
   return 0;
 }

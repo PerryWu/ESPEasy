@@ -193,5 +193,16 @@ void MQTTStatus(String& status)
   MQTTclient.publish(pubname.c_str(), status.c_str(),Settings.MQTTRetainFlag);
 }
 
-
-
+void MQTTStatusBinary(char * payload, int payloadLen)
+{
+  if (!MQTTclient.connected()) {
+    Serial.println("MQTT is not connected, skip this mqtt binary sending.");
+    return;
+  }
+  String pubname = Settings.MQTTpublish;
+  //pubname.replace("/#", "/status");
+  //pubname.replace("%sysname%", Settings.Name);
+  pubname += "/b";  //topic will be :id/in/b to distinct text and binary
+  //MQTTclient.publish(pubname.c_str(), (uint8_t *)payload, payloadLen, Settings.MQTTRetainFlag);
+  MQTTclient.publish(pubname.c_str(), (uint8_t *)payload, payloadLen, true);
+}

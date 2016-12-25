@@ -346,6 +346,9 @@ void sendSysInfoUDP(byte repeats)
   // 2 byte build
   // 25 char name
   // 1 byte node type id
+  // 1 byte protocol
+  // 4 byte controller ip
+  // 2 byte controller port
   
   // send my info to the world...
   strcpy_P(log, PSTR("UDP  : Send Sysinfo message"));
@@ -360,13 +363,20 @@ void sendSysInfoUDP(byte repeats)
     for (byte x = 0; x < 6; x++)
       data[x + 2] = macread[x];
     IPAddress ip = WiFi.localIP();
+    // high order byte store in high address
     for (byte x = 0; x < 4; x++)
-      data[x + 8] = ip[x];
+      data[x + 8] = ip[3-x];
     data[12] = Settings.Unit;
     data[13] = Settings.Build & 0xff;
     data[14] = Settings.Build >> 8;
     memcpy((byte*)data+15,Settings.Name,25);
     data[40] = NODE_TYPE_ID;
+    data[41] = Settings.Protocol;
+    for(byte x = 0; x < 4; x++) {
+      data[x+42] = Settings.Controller_IP[3-x];
+    }
+    data[46] = Settings.ControllerPort & 0xff;
+    data[47] = Settings.ControllerPort >> 8;
     //statusLED(true);
 
     IPAddress broadcastIP(255, 255, 255, 255);

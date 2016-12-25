@@ -115,7 +115,8 @@
 // Defined by Perry.
 #define FEATURE_SYSINFO_BCAST            true
 #define FEATURE_MQTT_SSL                 true
-
+// Useless in defined here. But sys need larger mqtt size
+//#define MQTT_MAX_PACKET_SIZE 384  
 // ********************************************************************************
 //   DO NOT CHANGE ANYTHING BELOW THIS LINE
 // ********************************************************************************
