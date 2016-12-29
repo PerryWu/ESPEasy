@@ -1694,9 +1694,11 @@ void handle_control() {
   printWebString = "";
   String reply = "";
 
-  if (!PluginCall(PLUGIN_WRITE, &TempEvent, webrequest))
-    reply += F("Unknown or restricted command!");
-
+  if(!HttpCall(&TempEvent, webrequest)) {
+    // not for Control api
+    if (!PluginCall(PLUGIN_WRITE, &TempEvent, webrequest))
+      reply += F("Unknown or restricted command!");
+  }
   reply += printWebString;
 
   if (printToWebJSON)

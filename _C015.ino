@@ -54,11 +54,11 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
         Serial.print("Receive Json: ");
         Serial.println(event->String2);
 
-        // format: {idx:¡±¡±, event:¡±switch¡±, value:{}}
-        // {idx:¡±¡±, event:¡±pkPmWriteReg¡±, value:{regAddr:¡±¡±, regData:¡±¡±}}
+        // format: {idx:"", event:"switch", value:""}
+        // {idx:"", event:"pkPmWriteReg", regAddr:"", regData:""}
         if (root.success())
         {
-          long idx = root["idx"];
+          unsigned int idx = root["idx"];
 
           // idx is 0 means we have to check all plugins
           if(idx == 0) {
@@ -71,19 +71,22 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
             break;
           }
           // idx is not 0, do the task only.
-          for (byte x = 0; x < TASKS_MAX; x++)
+          for (int x = 0; x < TASKS_MAX; x++)
           {
             if (Settings.TaskDeviceID[x] == idx)
             {
-              // TODO: Think a way to dispatch...
               String action;
-              byte deviceNumber = Settings.TaskDeviceNumber[x]; 
+              byte deviceNumber = Settings.TaskDeviceNumber[x];
               struct EventStruct TempEvent;
               TempEvent.idx = idx;
+              TempEvent.TaskIndex = x;
               TempEvent.Source = VALUE_SOURCE_MQTT;
               TempEvent.root = &root;
-              if(Plugin_id[deviceNumber]) {
-                Plugin_ptr[deviceNumber](PLUGIN_WRITEJSON, &TempEvent, action);
+              for (int y = 0; y < PLUGIN_MAX; y++) {
+                if (Plugin_id[y] == deviceNumber)  {
+                  Plugin_ptr[deviceNumber](PLUGIN_WRITEJSON, &TempEvent, action);
+                  break;
+                }
               }
               break;
             }
@@ -97,8 +100,8 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
         StaticJsonBuffer<200> jsonBuffer;
 
         JsonObject& root = jsonBuffer.createObject();
-        // format: {uuid:¡±¡±, idx:¡±¡±, source:¡±timer/device¡±,event:¡±report¡±, value:{}}
-        // {uuid:¡±¡±, idx:¡±¡±, source:¡±timer/device¡±,event:¡±pkPmRegData¡±, value:{}}
+        // format: {uuid:"", idx:"", source:"timer/device",event:"report", value:{}}
+        // {uuid:"", idx:"", source:"timer/device",event:"pkPmRegData", value:{}}
 
         root["idx"] = event->idx;
         root["source"] = F("device");

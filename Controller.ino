@@ -206,3 +206,36 @@ void MQTTStatusBinary(char * payload, int payloadLen)
   //MQTTclient.publish(pubname.c_str(), (uint8_t *)payload, payloadLen, Settings.MQTTRetainFlag);
   MQTTclient.publish(pubname.c_str(), (uint8_t *)payload, payloadLen, true);
 }
+
+bool HttpCall(struct EventStruct *event, String& string)
+{
+  String log = "";
+  char inputs[80];
+  char TmpStr1[80];
+  String command = parseString(string, 1);
+  string.toCharArray(inputs, 80);
+  boolean success = false;
+  
+  Serial.print("Check HttpCall: ");
+  Serial.println(command);
+
+  if(command == F("setcontroller"))
+  {
+    printToWebJSON = true;
+    success = true;
+    // format: control?cmd=setController,1.1.1.1,8080
+    if (GetArgv(inputs, TmpStr1, 2))  str2ip(TmpStr1, Settings.Controller_IP);
+    Settings.ControllerPort = event->Par2;
+    log = "setController, ip: " + String(TmpStr1) + " port: " + String(Settings.ControllerPort);
+    addLog(LOG_LEVEL_INFO, log);
+    printWebString += getStatusJson("done", "done");
+    SaveSettings();
+
+    command = "reboot";
+    setSystemCMDTimer(2000, command);
+    //delay(2000);
+    //cmd_within_mainloop = CMD_REBOOT;
+  }
+
+  return success;
+}

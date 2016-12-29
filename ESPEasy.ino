@@ -574,6 +574,7 @@ void setup()
     if (Settings.Build != BUILD)
       BuildFixes();
 
+    CPluginInit();
     boardInit();
     
     String log = F("\nINIT : Booting Build nr:");
@@ -586,12 +587,10 @@ void setup()
     hardwareInit();
     PluginInit();
     statusLED(); // Turn on LED first if has LED
-
+ 
     WiFi.persistent(false); // Do not use SDK storage of SSID/WPA parameters
     WifiAPconfig();
     WifiConnect(3);
-
-    CPluginInit();
 
     WebServerInit();
 

@@ -26,6 +26,8 @@ void boardInit()
     // Have LED
     Settings.Pin_status_led = 16;
     Settings.Protocol = 15;
+    byte ProtocolIndex = getProtocolIndex(Settings.Protocol);
+    CPlugin_ptr[ProtocolIndex](CPLUGIN_PROTOCOL_TEMPLATE, 0, dummyString);
 
     // Task 0 should be pkpowerplug
     Settings.TaskDeviceNumber[0] = 63;

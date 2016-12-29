@@ -2336,3 +2336,16 @@ String getReportJson(int idx, char *event, char *jsonValue)
   reply += F("\n}\n");
   return reply;
 }
+
+String getStatusJson(char *status, char *message)
+{
+  printToWebJSON = true;
+  String reply = "";
+
+  reply += F("{\n\"status\":\"");
+  reply += status;
+  reply += F("\",\n\"message\":\"");
+  reply += message;
+  reply += F("\"\n}\n");
+  return reply;
+}

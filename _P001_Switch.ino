@@ -206,6 +206,37 @@ boolean Plugin_001(byte function, struct EventStruct *event, String& string)
         break;
       }
 
+    case PLUGIN_WRITEJSON:
+    {
+      JsonObject& root = *(event->root);
+
+      if(event->root == NULL)
+        break;
+      bool hit = false;
+      String command = (const char *)root["event"];
+      Serial.println(command);
+      if(command == F("switch")) {
+        hit = true;
+        string = "gpio,";
+        string += Settings.TaskDevicePin1[event->TaskIndex];
+        string += ",";
+        int value = root["value"];
+        if(Settings.TaskDevicePin1Inversed[event->TaskIndex]) {
+          value = (value + 1) & 1;
+        }
+        string += value;
+      }
+      Serial.print("command: ");
+      Serial.println(command);
+      Serial.println(string);
+
+      parseCommandString(event, string);
+
+      if(hit == false)
+        break;
+      // Pass through to PLUGIN_WRITE to handle command
+    }
+
     case PLUGIN_WRITE:
       {
         String log = "";

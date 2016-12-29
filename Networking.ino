@@ -349,6 +349,7 @@ void sendSysInfoUDP(byte repeats)
   // 1 byte protocol
   // 4 byte controller ip
   // 2 byte controller port
+  // 4 byte uptime (wdcounter /2)
   
   // send my info to the world...
   strcpy_P(log, PSTR("UDP  : Send Sysinfo message"));
@@ -378,6 +379,7 @@ void sendSysInfoUDP(byte repeats)
     data[46] = Settings.ControllerPort & 0xff;
     data[47] = Settings.ControllerPort >> 8;
     //statusLED(true);
+    *(unsigned long *)(&data[48]) = wdcounter/2;
 
     IPAddress broadcastIP(255, 255, 255, 255);
     portUDP.beginPacket(broadcastIP, udpPort);

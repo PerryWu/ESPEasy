@@ -102,6 +102,7 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
     Settings.TaskDevicePluginConfigLong[event->TaskIndex][2] = input.toInt();
     input = WebServer.arg("plugin_063_powerp_k");
     Settings.TaskDevicePluginConfigLong[event->TaskIndex][3] = input.toInt();
+    success = true;
     break;
   }
 
@@ -122,6 +123,13 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
     swSer->begin(4800);
     swSer->setParity(1);
 
+    if(Settings.TaskDevicePluginConfigLong[event->TaskIndex][0] == 0) {
+      // basic setup.
+      Settings.TaskDevicePluginConfigLong[event->TaskIndex][0] = 1;
+      Settings.TaskDevicePluginConfigLong[event->TaskIndex][1] = 1;
+      Settings.TaskDevicePluginConfigLong[event->TaskIndex][2] = 1;
+      Settings.TaskDevicePluginConfigLong[event->TaskIndex][3] = 1;
+    }
     success = true;
     break;
   }
@@ -129,7 +137,10 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
   case PLUGIN_ONCE_A_SECOND:
   {
     if (!MQTTclient.connected()) {
-      Serial.println("MQTT is not connected, skip this reading!");
+      char str[60];
+      Serial.print("MQTT is not connected, skip this reading!");
+      sprintf_P(str, PSTR("Uptime %u ConnectFailures %u FreeMem %u"), wdcounter / 2, connectionFailures, FreeMem());
+      Serial.println(str);
       break;
     }
 
