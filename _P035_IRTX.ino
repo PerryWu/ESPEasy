@@ -5,7 +5,7 @@
 #include <IRremoteESP8266.h>
 IRsend *Plugin_035_irSender;
 
-#define PLUGIN_035
+//#define PLUGIN_035
 #define PLUGIN_ID_035         35
 #define PLUGIN_NAME_035       "Infrared Transmit"
 

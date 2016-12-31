@@ -2,7 +2,7 @@
 //#################################### Plugin 029: Output ###############################################
 //#######################################################################################################
 
-#define PLUGIN_029
+//#define PLUGIN_029
 #define PLUGIN_ID_029         29
 #define PLUGIN_NAME_029       "Output - (Domoticz MQTT helper)"
 #define PLUGIN_VALUENAME1_029 "Output"

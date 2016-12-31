@@ -4,7 +4,7 @@
 
 // MyMessage *msgAnalog025; // Mysensors
 
-#define PLUGIN_025
+//#define PLUGIN_025
 #define PLUGIN_ID_025 25
 #define PLUGIN_NAME_025 "Analog input - ADS1115"
 #define PLUGIN_VALUENAME1_025 "Analog"

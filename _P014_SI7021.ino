@@ -3,7 +3,7 @@
 //#######################################################################################################
 // 12-10-2015 Charles-Henri Hallard, see my projects and blog at https://hallard.me
 
-#define PLUGIN_014
+//#define PLUGIN_014
 #define PLUGIN_ID_014        14
 #define PLUGIN_NAME_014       "Temperature & Humidity - SI7021"
 #define PLUGIN_VALUENAME1_014 "Temperature"

@@ -4,7 +4,7 @@
 
 // MyMessage *msgTemp024; // Mysensors
 
-#define PLUGIN_024
+//#define PLUGIN_024
 #define PLUGIN_ID_024 24
 #define PLUGIN_NAME_024 "Temperature IR + ambient - MLX90614"
 #define PLUGIN_VALUENAME1_024 "Temperature"

@@ -18,7 +18,7 @@
  - moved on/off translation for SENSOR_TYPE_SWITCH/DIMMER to FHEM module
  /******************************************************************************/
 
-#define CPLUGIN_009
+//#define CPLUGIN_009
 #define CPLUGIN_ID_009         9
 #define CPLUGIN_NAME_009       "FHEM HTTP"
 

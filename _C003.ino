@@ -2,7 +2,7 @@
 //########################### Controller Plugin 003: Nodo Telnet  #######################################
 //#######################################################################################################
 
-#define CPLUGIN_003
+//#define CPLUGIN_003
 #define CPLUGIN_ID_003         3
 #define CPLUGIN_NAME_003       "Nodo Telnet"
 

@@ -3,7 +3,7 @@
 //#######################################################################################################
 // 13-10-2015 Charles-Henri Hallard, see my projects and blog at https://hallard.me
 
-#define PLUGIN_015
+//#define PLUGIN_015
 #define PLUGIN_ID_015        15
 #define PLUGIN_NAME_015       "Luminosity - TLS2561"
 #define PLUGIN_VALUENAME1_015 "Lux"

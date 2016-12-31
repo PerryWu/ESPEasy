@@ -3,7 +3,7 @@
 //#######################################################################################################
 // This sketch is based on https://github.com/Schm1tz1/arduino-ms5xxx
 
-#define PLUGIN_032
+//#define PLUGIN_032
 #define PLUGIN_ID_032        32
 #define PLUGIN_NAME_032       "Temperature & Pressure - MS5611 (GY-63)"
 #define PLUGIN_VALUENAME1_032 "Temperature"

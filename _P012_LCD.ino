@@ -10,7 +10,7 @@
 
 LiquidCrystal_I2C *lcd;
 
-#define PLUGIN_012
+//#define PLUGIN_012
 #define PLUGIN_ID_012         12
 #define PLUGIN_NAME_012       "Display - LCD2004"
 #define PLUGIN_VALUENAME1_012 "LCD"

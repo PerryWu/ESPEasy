@@ -2,7 +2,7 @@
 //#################################### Plugin 009: MCP23017 input #######################################
 //#######################################################################################################
 
-#define PLUGIN_009
+//#define PLUGIN_009
 #define PLUGIN_ID_009         9
 #define PLUGIN_NAME_009       "Switch input - MCP23017"
 #define PLUGIN_VALUENAME1_009 "Switch"
