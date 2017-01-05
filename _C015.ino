@@ -84,7 +84,7 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
               TempEvent.root = &root;
               for (int y = 0; y < PLUGIN_MAX; y++) {
                 if (Plugin_id[y] == deviceNumber)  {
-                  Plugin_ptr[deviceNumber](PLUGIN_WRITEJSON, &TempEvent, action);
+                  Plugin_ptr[y](PLUGIN_WRITEJSON, &TempEvent, action);
                   break;
                 }
               }
@@ -100,8 +100,8 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
         StaticJsonBuffer<200> jsonBuffer;
 
         JsonObject& root = jsonBuffer.createObject();
-        // format: {uuid:"", idx:"", source:"timer/device",event:"report", value:{}}
-        // {uuid:"", idx:"", source:"timer/device",event:"pkPmRegData", value:{}}
+        // format: {idx:"", source:"timer/device",event:"report", value:{}}
+        // {idx:"", source:"timer/device",event:"pkPmRegData", value:{}}
 
         root["idx"] = event->idx;
         root["source"] = F("device");
@@ -111,67 +111,69 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
         switch (event->sensorType)
         {
           case SENSOR_TYPE_SINGLE:                      // single value sensor, used for Dallas, BH1750, etc
-            value["nvalue"] = 0;
             inputs = toString(UserVar[event->BaseVarIndex],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
             inputs.toCharArray(str, 80);
-            value["svalue"] =  str;
+            root["event"] = event->sensorType;
+            value["data"] = str;
             break;
           case SENSOR_TYPE_LONG:                      // single LONG value, stored in two floats (rfid tags)
-            value["nvalue"] = 0;
+            root["event"] = event->sensorType;
             inputs = (unsigned long)UserVar[event->BaseVarIndex] + ((unsigned long)UserVar[event->BaseVarIndex + 1] << 16);
             inputs.toCharArray(str, 80);
-            value["svalue"] =  str;
+            value["data"] = str;
             break;
           case SENSOR_TYPE_DUAL:                       // any sensor that uses two simple values
-            value["nvalue"] = 0;
-            inputs  = toString(UserVar[event->BaseVarIndex ],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
-            inputs += ";";
-            inputs += toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
+            root["event"] = event->sensorType;
+            inputs = toString(UserVar[event->BaseVarIndex ],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
             inputs.toCharArray(str, 80);
-            value["svalue"] =  str;
+            value["data"] = str;
+            inputs = toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
+            inputs.toCharArray(str, 80);
+            value["data2"] = str;
             break;            
           case SENSOR_TYPE_TEMP_HUM:                      // temp + hum + hum_stat, used for DHT11
-            value["nvalue"] = 0;
-            inputs  = toString(UserVar[event->BaseVarIndex],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
-            inputs += ";";
-            inputs += toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
-            inputs += ";0";
+            root["event"] = event->sensorType;
+            inputs = toString(UserVar[event->BaseVarIndex ],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
             inputs.toCharArray(str, 80);
-            value["svalue"] =  str;
+            value["temp"] = str;
+            inputs = toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
+            inputs.toCharArray(str, 80);
+            value["humid"] = str;
             break;
           case SENSOR_TYPE_TEMP_BARO:                      // temp + hum + hum_stat + bar + bar_fore, used for BMP085
-            value["nvalue"] = 0;
-            inputs  = toString(UserVar[event->BaseVarIndex],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
-            inputs += ";0;0;";
-            inputs += toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
-            inputs += ";0";
+            root["event"] = event->sensorType;
+            inputs = toString(UserVar[event->BaseVarIndex ],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
             inputs.toCharArray(str, 80);
-            value["svalue"] =  str;
+            value["temp"] = str;
+            inputs = toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
+            inputs.toCharArray(str, 80);
+            value["humid"] = str;
             break;
           case SENSOR_TYPE_TEMP_HUM_BARO:                      // temp + hum + hum_stat + bar + bar_fore, used for BME280
-            value["nvalue"] = 0;
-            inputs  = toString(UserVar[event->BaseVarIndex],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
-            inputs += ";";
-            inputs += toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
-            inputs += ";0;";
-            inputs += toString(UserVar[event->BaseVarIndex + 2],ExtraTaskSettings.TaskDeviceValueDecimals[2]);
-            inputs += ";0";
+            root["event"] = event->sensorType;
+            inputs = toString(UserVar[event->BaseVarIndex ],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
             inputs.toCharArray(str, 80);
-            value["svalue"] =  str;
+            value["temp"] = str;
+            inputs = toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
+            inputs.toCharArray(str, 80);
+            value["humid"] = str;
+            inputs = toString(UserVar[event->BaseVarIndex + 2],ExtraTaskSettings.TaskDeviceValueDecimals[2]);
+            inputs.toCharArray(str, 80);
+            value["bar"] = str;
             break;
           case SENSOR_TYPE_SWITCH:
-            value["command"] = "switchlight";
+            root["event"] = "switch";
             if (UserVar[event->BaseVarIndex] == 0)
-              value["switchcmd"] = "Off";
+              value["value"] = 0;
             else
-              value["switchcmd"] = "On";
+              value["value"] = 1;
             break;
           case SENSOR_TYPE_DIMMER:
-            value["command"] = "switchlight";
+            root["event"] = "switchlight";
             if (UserVar[event->BaseVarIndex] == 0)
-              value["switchcmd"] = "Off";
+              value["value"] = "0";
             else
-              value["Set%20Level"] = UserVar[event->BaseVarIndex];
+              value["value"] = UserVar[event->BaseVarIndex];
             break;
           case SENSOR_TYPE_CUSTOM:
             // TODO: Add event and value...

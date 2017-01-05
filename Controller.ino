@@ -69,6 +69,7 @@ void callback(char* c_topic, byte* b_payload, unsigned int length) {
 \*********************************************************************************************/
 void MQTTConnect()
 {
+  /*
 #if FEATURE_MQTT_SSL
   if(Settings.SecureProtocol)
     MQTTclient.setClient(mqtts);
@@ -77,7 +78,12 @@ void MQTTConnect()
 #else
   MQTTclient.setClient(mqtt);    
 #endif  
-  
+*/  
+  if(*((int *)(Settings.Controller_IP)) == 0) {
+    Serial.println("Controller IP is empty. skip mqtt connect");
+    return;
+  }
+
   IPAddress MQTTBrokerIP(Settings.Controller_IP);
   MQTTclient.setServer(MQTTBrokerIP, Settings.ControllerPort);
   MQTTclient.setCallback(callback);
@@ -123,6 +129,7 @@ void MQTTConnect()
       log = F("Subscribed to: ");
       log += subscribeTo;
       addLog(LOG_LEVEL_INFO, log);
+      usedToConnected = true;
       break; // end loop if succesfull
     }
     else
@@ -145,11 +152,15 @@ void MQTTCheck()
   if (Protocol[ProtocolIndex].usesMQTT)
     if (!MQTTclient.connected())
     {
+      //WiFi.printDiag(Serial);
+      //Serial.println(WiFi.status());
       String log = F("MQTT : Connection lost");
       addLog(LOG_LEVEL_ERROR, log);
-      connectionFailures += 2;
+      connectionFailures += 1;
       MQTTclient.disconnect();
+      //WifiDisconnect();
       delay(1000);
+      //WifiConnect(1);
       MQTTConnect();
     }
     else if (connectionFailures)
@@ -195,16 +206,24 @@ void MQTTStatus(String& status)
 
 void MQTTStatusBinary(char * payload, int payloadLen)
 {
+  /*
   if (!MQTTclient.connected()) {
     Serial.println("MQTT is not connected, skip this mqtt binary sending.");
     return;
   }
+  */
   String pubname = Settings.MQTTpublish;
   //pubname.replace("/#", "/status");
   //pubname.replace("%sysname%", Settings.Name);
   pubname += "/b";  //topic will be :id/in/b to distinct text and binary
   //MQTTclient.publish(pubname.c_str(), (uint8_t *)payload, payloadLen, Settings.MQTTRetainFlag);
-  MQTTclient.publish(pubname.c_str(), (uint8_t *)payload, payloadLen, true);
+  if(!MQTTclient.publish(pubname.c_str(), (uint8_t *)payload, payloadLen, true)) {
+    Serial.println("MQTT publish failed");
+    MQTTConnect();
+    connectionFailures++;
+  } else if(connectionFailures) {
+    connectionFailures--;    
+  }
 }
 
 bool HttpCall(struct EventStruct *event, String& string)

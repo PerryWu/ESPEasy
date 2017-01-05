@@ -209,7 +209,7 @@ boolean Plugin_001(byte function, struct EventStruct *event, String& string)
     case PLUGIN_WRITEJSON:
     {
       JsonObject& root = *(event->root);
-
+      Serial.println("PLUGIN_WRITEJSON");
       if(event->root == NULL)
         break;
       bool hit = false;

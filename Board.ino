@@ -17,29 +17,44 @@ void boardInit()
   }
   sprintf_P(tmp, PSTR("-%02x%02x%02x%02x%02x%02x"), macread[0], macread[1], macread[2], macread[3], macread[4], macread[5]);
   clientIdString += tmp;
-
-  if(Settings.BoardInited == true)
+  if(Settings.BoardInited == true) {
+    Serial.println("Nothing is done in boardinit.");
     return;
+  }
 
   if(strcasecmp_P(Settings.Name, PSTR("pkPowerPlug")) == 0) {
-    //Settings.Protocol = 0;
+    Settings.ConnectionFailuresThreshold = 2;
     // Have LED
-    Settings.Pin_status_led = 16;
+    //Settings.Pin_status_led = 16;
     Settings.Protocol = 15;
     byte ProtocolIndex = getProtocolIndex(Settings.Protocol);
     CPlugin_ptr[ProtocolIndex](CPLUGIN_PROTOCOL_TEMPLATE, 0, dummyString);
 
     // Task 0 should be pkpowerplug
     Settings.TaskDeviceNumber[0] = 63;
-    Settings.TaskDevicePin1[0] = 14;
-    Settings.TaskDevicePin2[0] = 12;
+    Settings.TaskDeviceID[0] = 1;
+    Settings.TaskDevicePin1[0] = 12;
+    Settings.TaskDevicePin2[0] = 13;
     Settings.TaskDevicePin3[0] = -1;
     Settings.TaskDevicePin1PullUp[0] = false;
     Settings.TaskDevicePin1Inversed[0] = false;
-    Settings.TaskDeviceSendData[0] = true;
+    Settings.TaskDeviceSendData[0] = false;
     Settings.TaskDeviceTimer[0] = 60;
-    Settings.BoardInited = true;
 
+    // Task 1 should be switch
+    Settings.TaskDeviceNumber[1] = 1;
+    Settings.TaskDeviceID[1] = 2;
+    Settings.TaskDevicePin1[1] = 14;
+    Settings.TaskDevicePin2[1] = -1;
+    Settings.TaskDevicePin3[1] = -1;
+    Settings.TaskDevicePin1PullUp[1] = false;
+    Settings.TaskDevicePin1Inversed[1] = false;
+    Settings.TaskDeviceSendData[1] = true;
+    Settings.TaskDeviceTimer[1] = 0;
+    Settings.TaskDevicePluginConfig[1][0] = 1; // 1:Switch, 2: Dimmer
+    Settings.TaskDevicePluginConfig[1][2] = 0; // 0:Normal, 1&2 push button
+    Settings.TaskDevicePluginConfig[1][3] = 1; // send boot state
+    Settings.BoardInited = true;
     LoadTaskSettings(0);
     strcpy_P(ExtraTaskSettings.TaskDeviceName, PSTR("Power Plug"));
     SaveTaskSettings(0);

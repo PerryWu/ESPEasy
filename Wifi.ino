@@ -6,6 +6,7 @@ void WifiAPconfig()
   uint8_t mac[] = {0, 0, 0, 0, 0, 0};
   uint8_t* macread = WiFi.macAddress(mac);
 
+  //WiFi.onEvent(WiFiEvent);
   // create and store unique AP SSID/PW to prevent ESP from starting AP mode with default SSID and No password!
   char ap_ssid[20];
   ap_ssid[0] = 0;
@@ -229,3 +230,17 @@ void WifiCheck()
   }
 }
 
+void WiFiEvent(WiFiEvent_t event) {
+    Serial.printf("[WiFi-event] event: %d\n", event);
+
+    switch(event) {
+        case WIFI_EVENT_STAMODE_GOT_IP:
+            Serial.println("WiFi connected");
+            Serial.println("IP address: ");
+            Serial.println(WiFi.localIP());
+            break;
+        case WIFI_EVENT_STAMODE_DISCONNECTED:
+            Serial.println("WiFi lost connection");
+            break;
+    }
+}

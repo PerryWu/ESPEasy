@@ -76,7 +76,7 @@
 #define DEFAULT_NAME        "pkdev"         // Enter your device friendly name
 #define DEFAULT_SSID        "ssid"              // Enter your network SSID
 #define DEFAULT_KEY         "wpakey"            // Enter your network WPA key
-#define DEFAULT_SERVER      "192.168.0.8"       // Enter your Domoticz Server IP address
+#define DEFAULT_SERVER      "0.0.0.0"       // Enter your Domoticz Server IP address
 #define DEFAULT_PORT        8080                // Enter your Domoticz Server port value
 #define DEFAULT_DELAY       60                  // Enter your Send delay in seconds
 #define DEFAULT_AP_KEY      "12345678"         // Enter network WPA key for AP (config) mode
@@ -114,7 +114,7 @@
 
 // Defined by Perry.
 #define FEATURE_SYSINFO_BCAST            true
-#define FEATURE_MQTT_SSL                 true
+#define FEATURE_MQTT_SSL                 false
 // Useless in defined here. But sys need larger mqtt size
 //#define MQTT_MAX_PACKET_SIZE 384  
 // ********************************************************************************
@@ -123,7 +123,7 @@
 #define ESP_PROJECT_PID           2015050101L
 #define ESP_EASY
 #define VERSION                             9
-#define BUILD                             148
+#define BUILD                             151
 #define BUILD_NOTES                        ""
 #define FEATURE_SPIFFS                  false
 
@@ -520,7 +520,7 @@ unsigned long flashWrites = 0;
 String eventBuffer = "";
 
 String clientIdString = "";
-
+boolean usedToConnected = false;  // Perry: unknown network hang while using MQTT!
 /*********************************************************************************************\
  * SETUP
 \*********************************************************************************************/
@@ -574,16 +574,23 @@ void setup()
     if (Settings.Build != BUILD)
       BuildFixes();
 
+    if (Settings.UseSerial && Settings.SerialLogLevel >= LOG_LEVEL_DEBUG_MORE)
+      Serial.setDebugOutput(true);
+
+    //wdt_disable();
+    //wdt_enable(WDTO_8S);
     CPluginInit();
     boardInit();
     
     String log = F("\nINIT : Booting Build nr:");
     log += BUILD;
     addLog(LOG_LEVEL_INFO, log);
-
-    if (Settings.UseSerial && Settings.SerialLogLevel >= LOG_LEVEL_DEBUG_MORE)
-      Serial.setDebugOutput(true);
-
+    /*
+    char str[60];
+    sprintf_P(str, PSTR("FreeMem %u"), FreeMem());
+    Serial.println(str);
+    */
+    
     hardwareInit();
     PluginInit();
     statusLED(); // Turn on LED first if has LED
@@ -762,9 +769,22 @@ void runOncePerSecond()
 
   checkSensors();
 
-  if (Settings.ConnectionFailuresThreshold)
-    if (connectionFailures > Settings.ConnectionFailuresThreshold)
-      delayedReboot(60);
+  if (Settings.ConnectionFailuresThreshold) {
+    if (connectionFailures > Settings.ConnectionFailuresThreshold && usedToConnected) {
+      // Reboot only when we have connected to server before.
+      if(usedToConnected) {
+        Serial.print("Failed in connection, reboot device");
+        ESP.reset();
+      } 
+      /*else {
+        Serial.print("Failed in connection, reboot device in 60 seconds");
+        //String command = "reboot";
+        //setSystemCMDTimer(60000, command); // reboot the device in 60 seconds.
+        delayedReboot(60);
+      }
+      */
+    }
+  }
 
   if (cmd_within_mainloop != 0)
   {

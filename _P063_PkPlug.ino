@@ -8,14 +8,15 @@
 #define PLUGIN_VALUENAME1_063 "PKPowerPlug"
 
 //#define DEBUG_063
-#define MAXRECORD 14
-struct {
+#define MAXRECORD 50 // every second records ten times, total 5 seconds
+struct powerInfo {
   uint32_t iarms;
-  uint32_t urms;
-  uint32_t ufreq;
-  uint32_t powerpa;
-  uint32_t energyp;
-} PowerRecords[MAXRECORD];
+};
+
+struct {
+  unsigned int idx;
+  struct powerInfo records[MAXRECORD];
+} Power;
 
 boolean Plugin_063(byte function, struct EventStruct *event, String& string)
 {
@@ -120,6 +121,7 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
       delete swSer;
       swSer = new SoftwareSerial(Settings.TaskDevicePin1[event->TaskIndex], Settings.TaskDevicePin2[event->TaskIndex], false, 256);
     }
+    Serial.println("Baud Rate 4800");
     swSer->begin(4800);
     swSer->setParity(1);
 
@@ -136,32 +138,26 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
 
   case PLUGIN_ONCE_A_SECOND:
   {
-    if (!MQTTclient.connected()) {
-      char str[60];
-      Serial.print("MQTT is not connected, skip this reading!");
-      sprintf_P(str, PSTR("Uptime %u ConnectFailures %u FreeMem %u"), wdcounter / 2, connectionFailures, FreeMem());
-      Serial.println(str);
+    break;
+  }
+
+  case PLUGIN_TEN_PER_SECOND:
+  {
+    if(WiFi.status() != WL_CONNECTED || !MQTTclient.connected()) {
+      //Serial.println("Failed to conect to remote");
       break;
     }
 
-    // Read all power info here each time 14 rounds!
-    for(int i = 0; i < MAXRECORD; i++) {
-      rn8209_readReg(&PowerRecords[i].iarms, 0x22, 3);
-      PowerRecords[i].iarms *= Settings.TaskDevicePluginConfigLong[event->TaskIndex][0];
-      rn8209_readReg(&PowerRecords[i].urms, 0x24, 3);
-      PowerRecords[i].urms *= Settings.TaskDevicePluginConfigLong[event->TaskIndex][1];
-      rn8209_readReg(&PowerRecords[i].ufreq, 0x25, 2);
-      PowerRecords[i].ufreq *= Settings.TaskDevicePluginConfigLong[event->TaskIndex][2];
-      rn8209_readReg(&PowerRecords[i].powerpa, 0x26, 4);
-      PowerRecords[i].powerpa *= Settings.TaskDevicePluginConfigLong[event->TaskIndex][3];
-      rn8209_readReg(&PowerRecords[i].energyp, 0x29, 3);
-    }
-    MQTTStatusBinary((char *)PowerRecords, sizeof(PowerRecords));
-    success = true;
-    break;
-  }
-  case PLUGIN_TEN_PER_SECOND:
-  {
+    static int index = 0;
+
+    Power.idx = Settings.TaskDeviceID[event->TaskIndex];
+    rn8209_readReg(&Power.records[index].iarms, 0x22, 3);
+    Power.records[index].iarms *= Settings.TaskDevicePluginConfigLong[event->TaskIndex][0];
+    if(index == MAXRECORD -1) {
+      MQTTStatusBinary((char *)&Power, sizeof(Power));
+      index = 0;
+    } else 
+      index++;
     success = true;
     break;
   }
@@ -363,22 +359,28 @@ int rn8209_readReg(uint32_t *dstData, char regAddr, int regLen) {
   char *dst = ((char *) dstData) + 4 - regLen;
   *dstData = 0; // reset
 
+  //return regLen;
+
 #ifdef DEBUG_063
+  Serial.print(millis());
   Serial.print("[rn8209_readReg] regAddr: ");
   Serial.print(regAddr, HEX);
   Serial.print(" regLen: ");
   Serial.println(regLen);
 #endif
-  ESP.wdtFeed();
-  swSer->listen();
   while (retryCnt-- > 0) {
     // initialize variables
     bufLen = 0;
     cksum = regAddr;
+    //ESP.wdtFeed();
+    swSer->flush();
+    swSer->listen();
     swSer->write(regAddr);
     delay(20);
 
+    swSer->stopListening();
     while (swSer->available() > 0) {
+      yield();
       readByte = swSer->read();
       cksum += readByte;
       if(bufLen < regLen)
@@ -396,7 +398,6 @@ int rn8209_readReg(uint32_t *dstData, char regAddr, int regLen) {
       //Serial.println("[rn8209_readReg] checksum is correct");
       // Change the order
       *dstData = htonl(*dstData);
-      swSer->stopListening();
       return regLen;
     } else {
       Serial.println("[rn8209_readReg] checksum is NOT correct");
@@ -404,6 +405,5 @@ int rn8209_readReg(uint32_t *dstData, char regAddr, int regLen) {
     }
   }
   Serial.println("[rn8209_readReg] read was failed");
-  swSer->stopListening();
   return 0;
 }
