@@ -100,12 +100,14 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
         StaticJsonBuffer<200> jsonBuffer;
 
         JsonObject& root = jsonBuffer.createObject();
-        // format: {idx:"", source:"timer/device",event:"report", value:{}}
-        // {idx:"", source:"timer/device",event:"pkPmRegData", value:{}}
+        // format: {idx:"", s:"timer/device",e:"report", v:""}
+        // {idx:"", s:"timer/device", e:"report", voltage:"", current:"", voltageFreq: "", ..}
+        // {idx:"", s:"timer/device", e:"pkPmRegData", regAddr:"", regData:""}
+        // {idx:"", s:"timer/device", e:"switch", v:"on/off"}
+        // {idx:"", s:"timer/device", e:"report", a:"", b:"", c:"" }
 
         root["idx"] = event->idx;
         root["source"] = F("device");
-        JsonObject& value = root.createNestedObject("value");
         String inputs;
         char str[80];        
         switch (event->sensorType)
@@ -113,71 +115,71 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
           case SENSOR_TYPE_SINGLE:                      // single value sensor, used for Dallas, BH1750, etc
             inputs = toString(UserVar[event->BaseVarIndex],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
             inputs.toCharArray(str, 80);
-            root["event"] = event->sensorType;
-            value["data"] = str;
+            root["e"] = "report";
+            root["data"] = str;
             break;
           case SENSOR_TYPE_LONG:                      // single LONG value, stored in two floats (rfid tags)
-            root["event"] = event->sensorType;
+            root["e"] = "report";
             inputs = (unsigned long)UserVar[event->BaseVarIndex] + ((unsigned long)UserVar[event->BaseVarIndex + 1] << 16);
             inputs.toCharArray(str, 80);
-            value["data"] = str;
+            root["data"] = str;
             break;
           case SENSOR_TYPE_DUAL:                       // any sensor that uses two simple values
-            root["event"] = event->sensorType;
+            root["e"] = "report";
             inputs = toString(UserVar[event->BaseVarIndex ],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
             inputs.toCharArray(str, 80);
-            value["data"] = str;
+            root["data"] = str;
             inputs = toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
             inputs.toCharArray(str, 80);
-            value["data2"] = str;
+            root["data2"] = str;
             break;            
           case SENSOR_TYPE_TEMP_HUM:                      // temp + hum + hum_stat, used for DHT11
-            root["event"] = event->sensorType;
+            root["e"] = "report";
             inputs = toString(UserVar[event->BaseVarIndex ],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
             inputs.toCharArray(str, 80);
-            value["temp"] = str;
+            root["temp"] = str;
             inputs = toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
             inputs.toCharArray(str, 80);
-            value["humid"] = str;
+            root["humid"] = str;
             break;
           case SENSOR_TYPE_TEMP_BARO:                      // temp + hum + hum_stat + bar + bar_fore, used for BMP085
-            root["event"] = event->sensorType;
+            root["e"] = "report";
             inputs = toString(UserVar[event->BaseVarIndex ],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
             inputs.toCharArray(str, 80);
-            value["temp"] = str;
+            root["temp"] = str;
             inputs = toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
             inputs.toCharArray(str, 80);
-            value["humid"] = str;
+            root["humid"] = str;
             break;
           case SENSOR_TYPE_TEMP_HUM_BARO:                      // temp + hum + hum_stat + bar + bar_fore, used for BME280
-            root["event"] = event->sensorType;
+            root["e"] = "report";
             inputs = toString(UserVar[event->BaseVarIndex ],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
             inputs.toCharArray(str, 80);
-            value["temp"] = str;
+            root["temp"] = str;
             inputs = toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
             inputs.toCharArray(str, 80);
-            value["humid"] = str;
+            root["humid"] = str;
             inputs = toString(UserVar[event->BaseVarIndex + 2],ExtraTaskSettings.TaskDeviceValueDecimals[2]);
             inputs.toCharArray(str, 80);
-            value["bar"] = str;
+            root["bar"] = str;
             break;
           case SENSOR_TYPE_SWITCH:
-            root["event"] = "switch";
+            root["e"] = "switch";
             if (UserVar[event->BaseVarIndex] == 0)
-              value["value"] = 0;
+              root["v"] = 0;
             else
-              value["value"] = 1;
+              root["v"] = 1;
             break;
           case SENSOR_TYPE_DIMMER:
-            root["event"] = "switchlight";
+            root["e"] = "switchlight";
             if (UserVar[event->BaseVarIndex] == 0)
-              value["value"] = "0";
+              root["v"] = "0";
             else
-              value["value"] = UserVar[event->BaseVarIndex];
+              root["v"] = UserVar[event->BaseVarIndex];
             break;
           case SENSOR_TYPE_CUSTOM:
             // TODO: Add event and value...
-            value["TODO"] = "Add handler";
+            root["TODO"] = "Add handler";
         }
 
         char json[256];
