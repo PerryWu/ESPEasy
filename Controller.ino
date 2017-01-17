@@ -204,7 +204,7 @@ void MQTTStatus(String& status)
   MQTTclient.publish(pubname.c_str(), status.c_str(),Settings.MQTTRetainFlag);
 }
 
-void MQTTStatusBinary(char * payload, int payloadLen)
+bool MQTTStatusBinary(char * payload, int payloadLen)
 {
   /*
   if (!MQTTclient.connected()) {
@@ -221,8 +221,10 @@ void MQTTStatusBinary(char * payload, int payloadLen)
     Serial.println("MQTT publish failed");
     MQTTConnect();
     connectionFailures++;
+    return true;
   } else if(connectionFailures) {
     connectionFailures--;    
+    return false;
   }
 }
 

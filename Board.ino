@@ -23,7 +23,7 @@ void boardInit()
   }
 
   if(strcasecmp_P(Settings.Name, PSTR("pkPowerPlug")) == 0) {
-    Settings.ConnectionFailuresThreshold = 2;
+    Settings.ConnectionFailuresThreshold = 30; // should be 30 seconds since every second will try to send data
     // Have LED
     //Settings.Pin_status_led = 16;
     Settings.Protocol = 15;

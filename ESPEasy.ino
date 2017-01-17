@@ -123,7 +123,7 @@
 #define ESP_PROJECT_PID           2015050101L
 #define ESP_EASY
 #define VERSION                             9
-#define BUILD                             151
+#define BUILD                             152
 #define BUILD_NOTES                        ""
 #define FEATURE_SPIFFS                  false
 
@@ -252,7 +252,9 @@ ADC_MODE(ADC_VCC);
 #include "lwip/udp.h"
 #include "lwip/igmp.h"
 #include "include/UdpContext.h"
-
+#if FEATURE_MQTT_SSL
+#include <WiFiClientSecure.h>
+#endif
 extern "C" {
 #include "user_interface.h"
 }
@@ -585,11 +587,9 @@ void setup()
     String log = F("\nINIT : Booting Build nr:");
     log += BUILD;
     addLog(LOG_LEVEL_INFO, log);
-    /*
     char str[60];
     sprintf_P(str, PSTR("FreeMem %u"), FreeMem());
     Serial.println(str);
-    */
     
     hardwareInit();
     PluginInit();

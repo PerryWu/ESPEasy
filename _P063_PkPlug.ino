@@ -8,15 +8,59 @@
 #define PLUGIN_VALUENAME1_063 "PKPowerPlug"
 
 //#define DEBUG_063
-#define MAXRECORD 50 // every second records ten times, total 5 seconds
+#define MAX_RECORD 100 // every second records ten times, total 10 seconds
+#define MAX_MSG_STORE 30 // 5 minutes backup, total 300 msg.
+
 struct powerInfo {
   uint32_t iarms;
 };
 
-struct {
-  unsigned int idx;
-  struct powerInfo records[MAXRECORD];
-} Power;
+struct PowerMsg {
+  char idx;
+  char valid;
+  char reserved1;
+  char reserved2;
+  unsigned int time;
+  struct powerInfo records[MAX_RECORD];
+};
+
+static struct PowerMsg *Power = NULL;
+static char *msgStatus = NULL;
+static int msgCount = 0;
+static int recordIndex = 0;
+static int powerIndex = 0;
+
+void checkSentMsg () {
+  Serial.print("msgCount: ");
+  Serial.println(msgCount);
+
+  if(msgCount) {
+    for(int i = 0; i < MAX_MSG_STORE; i++) {
+      if(Power[i].valid) {
+        // this msg needed to be sent
+        Serial.print("Send time:");
+        Serial.println(Power[i].time);
+        if(!MQTTStatusBinary((char *)&Power[i], sizeof(struct PowerMsg))) {
+          // have error while sending status to controller.
+          // skip this sending procedure.
+          break;
+        }
+      }
+    }
+  }
+}
+
+void clearSentMsg(unsigned int time) {
+  Serial.print("clearSentMsg Receive time:");
+  Serial.println(time);
+  for(int i = 0; i < MAX_MSG_STORE; i++) {
+    if(Power[i].valid && Power[i].time == time) {
+      // this msg have been received by peer.
+      Power[i].valid = 0;
+      msgCount--;
+    }
+  }
+}
 
 boolean Plugin_063(byte function, struct EventStruct *event, String& string)
 {
@@ -125,6 +169,14 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
     swSer->begin(4800);
     swSer->setParity(1);
 
+    if(Power)
+      delete Power;
+    Power = new struct PowerMsg[MAX_MSG_STORE];
+
+    if(msgStatus)
+      delete msgStatus;
+    msgStatus = new char[MAX_MSG_STORE];
+
     if(Settings.TaskDevicePluginConfigLong[event->TaskIndex][0] == 0) {
       // basic setup.
       Settings.TaskDevicePluginConfigLong[event->TaskIndex][0] = 1;
@@ -138,26 +190,23 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
 
   case PLUGIN_ONCE_A_SECOND:
   {
+    checkSentMsg();
     break;
   }
 
   case PLUGIN_TEN_PER_SECOND:
   {
-    if(WiFi.status() != WL_CONNECTED || !MQTTclient.connected()) {
-      //Serial.println("Failed to conect to remote");
-      break;
-    }
-
-    static int index = 0;
-
-    Power.idx = Settings.TaskDeviceID[event->TaskIndex];
-    rn8209_readReg(&Power.records[index].iarms, 0x22, 3);
-    Power.records[index].iarms *= Settings.TaskDevicePluginConfigLong[event->TaskIndex][0];
-    if(index == MAXRECORD -1) {
-      MQTTStatusBinary((char *)&Power, sizeof(Power));
-      index = 0;
+    rn8209_readReg(&Power[powerIndex].records[recordIndex].iarms, 0x22, 3);
+    Power[powerIndex].records[recordIndex].iarms *= Settings.TaskDevicePluginConfigLong[event->TaskIndex][0];
+    if(recordIndex == MAX_RECORD -1) {
+      recordIndex = 0;      
+      Power[powerIndex].idx = Settings.TaskDeviceID[event->TaskIndex];
+      Power[powerIndex].valid = 1;
+      Power[powerIndex].time = millis();
+      msgCount++;
+      powerIndex = (powerIndex + 1) % MAX_MSG_STORE;
     } else 
-      index++;
+      recordIndex++;
     success = true;
     break;
   }
@@ -168,15 +217,18 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
     if(event->root == NULL)
       break;
     bool hit = false;
-    String command = (const char *)root["event"];
-    if(command == F("pkpmwritereg")) {
+    String command = (const char *)root["e"];
+    if(command == F("msgack")) {
+      unsigned int time = root["time"];
+      clearSentMsg(time);
+      // No need to setup hit = true, we've handled the case here.
+    } else if(command == F("pkpmwritereg")) {
       hit = true;
       string = "pkpmwritereg,";
       string += (const char *)root["regAddr"];
       string += ",";
       string += (const char *)root["regData"];
-    }
-    if(command == F("pkpmreadreg")) {
+    } else if(command == F("pkpmreadreg")) {
       hit = true;
       string = "pkpmreadreg,";
       string += (const char *)root["regAddr"];
