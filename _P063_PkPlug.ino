@@ -280,14 +280,14 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
         readLen = rn8209_readReg(&readData, regAddr, regLen);
         if(readLen) {
           String tmp = "";
-          tmp += F("{\"regAddr\":\"");
+          tmp += F("\"regAddr\":\"");
           tmp += String(regAddr);
           tmp += F("\", \"regData\":\"");
           tmp += String(readData, HEX);
-          tmp += F("\"}");
+          tmp += F("\"");
           SendStatus(event->Source, getReportJson(event->idx, "pkPmRegData", (char *)tmp.c_str()));
         } else {
-          SendStatus(event->Source, getReportJson(event->idx, "error", "{\"event\": \"pkPmWriteReg\"}"));
+          SendStatus(event->Source, getReportJson(event->idx, "error", "\"report\": \"pkPmWriteReg\""));
         }
       }
       // TODO: user SendStatus to report status
@@ -313,14 +313,14 @@ boolean Plugin_063(byte function, struct EventStruct *event, String& string)
       readLen = rn8209_readReg(&readData, regAddr, regLen);
       if(readLen) {
         String tmp = "";
-        tmp += F("{\"regAddr\":\"");
+        tmp += F("\"regAddr\":\"");
         tmp += String(regAddr, HEX);
         tmp += F("\", \"regData\":\"");
         tmp += String(readData, HEX);
-        tmp += F("\"}");
+        tmp += F("\"");
         SendStatus(event->Source, getReportJson(event->idx, "pkPmRegData", (char *)tmp.c_str()));
       } else {
-        SendStatus(event->Source, getReportJson(event->idx, "error", "{\"event\": \"pkPmReadReg\"}"));
+        SendStatus(event->Source, getReportJson(event->idx, "error", "\"event\": \"pkPmReadReg\""));
       }
       success = true;
     }

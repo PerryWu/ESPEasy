@@ -107,7 +107,6 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
         // {idx:"", s:"timer/device", e:"report", a:"", b:"", c:"" }
 
         root["idx"] = event->idx;
-        root["source"] = F("device");
         String inputs;
         char str[80];        
         switch (event->sensorType)
@@ -164,11 +163,11 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
             root["bar"] = str;
             break;
           case SENSOR_TYPE_SWITCH:
-            root["e"] = "switch";
+            root["e"] = "report";
             if (UserVar[event->BaseVarIndex] == 0)
-              root["v"] = 0;
+              root["v"] = "off";
             else
-              root["v"] = 1;
+              root["v"] = "on";
             break;
           case SENSOR_TYPE_DIMMER:
             root["e"] = "switchlight";

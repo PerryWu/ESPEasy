@@ -1,6 +1,16 @@
 /********************************************************************************************\
 * Initialize specific board setings
 \*********************************************************************************************/
+void pkCommonInit()
+{
+    Settings.ConnectionFailuresThreshold = 30; // should be 30 seconds since every second will try to send data
+    Settings.Protocol = 15;
+    byte ProtocolIndex = getProtocolIndex(Settings.Protocol);
+    CPlugin_ptr[ProtocolIndex](CPLUGIN_PROTOCOL_TEMPLATE, 0, dummyString);
+
+    // Have LED
+    //Settings.Pin_status_led = 16;
+}
 
 void boardInit()
 {
@@ -23,13 +33,7 @@ void boardInit()
   }
 
   if(strcasecmp_P(Settings.Name, PSTR("pkPowerPlug")) == 0) {
-    Settings.ConnectionFailuresThreshold = 30; // should be 30 seconds since every second will try to send data
-    // Have LED
-    //Settings.Pin_status_led = 16;
-    Settings.Protocol = 15;
-    byte ProtocolIndex = getProtocolIndex(Settings.Protocol);
-    CPlugin_ptr[ProtocolIndex](CPLUGIN_PROTOCOL_TEMPLATE, 0, dummyString);
-
+    pkCommonInit();
     // Task 0 should be pkpowerplug
     Settings.TaskDeviceNumber[0] = 63;
     Settings.TaskDeviceID[0] = 1;
@@ -58,9 +62,48 @@ void boardInit()
     LoadTaskSettings(0);
     strcpy_P(ExtraTaskSettings.TaskDeviceName, PSTR("Power Plug"));
     SaveTaskSettings(0);
-    
-    // Task 1 should be a pkswitch
+    LoadTaskSettings(1);
+    strcpy_P(ExtraTaskSettings.TaskDeviceName, PSTR("Relay"));
+    SaveTaskSettings(1);
+    hit = true;
+  }
 
+  if(strcasecmp_P(Settings.Name, PSTR("pkTwoRelay")) == 0) {
+    pkCommonInit();
+    // Task 0 should be switch
+    Settings.TaskDeviceNumber[0] = 1;
+    Settings.TaskDeviceID[0] = 1;
+    Settings.TaskDevicePin1[0] = 12;
+    Settings.TaskDevicePin2[0] = -1;
+    Settings.TaskDevicePin3[0] = -1;
+    Settings.TaskDevicePin1PullUp[0] = false;
+    Settings.TaskDevicePin1Inversed[0] = false;
+    Settings.TaskDeviceSendData[0] = true;
+    Settings.TaskDeviceTimer[0] = 0;
+    Settings.TaskDevicePluginConfig[1][0] = 1; // 1:Switch, 2: Dimmer
+    Settings.TaskDevicePluginConfig[1][2] = 0; // 0:Normal, 1&2 push button
+    Settings.TaskDevicePluginConfig[1][3] = 1; // send boot state
+
+    // Task 1 should be switch
+    Settings.TaskDeviceNumber[1] = 1;
+    Settings.TaskDeviceID[1] = 2;
+    Settings.TaskDevicePin1[1] = 13;
+    Settings.TaskDevicePin2[1] = -1;
+    Settings.TaskDevicePin3[1] = -1;
+    Settings.TaskDevicePin1PullUp[1] = false;
+    Settings.TaskDevicePin1Inversed[1] = false;
+    Settings.TaskDeviceSendData[1] = true;
+    Settings.TaskDeviceTimer[1] = 0;
+    Settings.TaskDevicePluginConfig[1][0] = 1; // 1:Switch, 2: Dimmer
+    Settings.TaskDevicePluginConfig[1][2] = 0; // 0:Normal, 1&2 push button
+    Settings.TaskDevicePluginConfig[1][3] = 1; // send boot state
+    Settings.BoardInited = true;
+    LoadTaskSettings(0);
+    strcpy_P(ExtraTaskSettings.TaskDeviceName, PSTR("Relay1"));
+    SaveTaskSettings(0);
+    LoadTaskSettings(1);
+    strcpy_P(ExtraTaskSettings.TaskDeviceName, PSTR("Relay2"));
+    SaveTaskSettings(1);
     hit = true;
   }
 

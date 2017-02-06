@@ -213,18 +213,30 @@ boolean Plugin_001(byte function, struct EventStruct *event, String& string)
       if(event->root == NULL)
         break;
       bool hit = false;
-      String command = (const char *)root["event"];
+      String command = (const char *)root["e"];
       Serial.println(command);
       if(command == F("switch")) {
+        String value = (const char *)root["value"];
+        Serial.println(value);
         hit = true;
         string = "gpio,";
         string += Settings.TaskDevicePin1[event->TaskIndex];
         string += ",";
-        int value = root["value"];
-        if(Settings.TaskDevicePin1Inversed[event->TaskIndex]) {
-          value = (value + 1) & 1;
+        int state = 0;
+        if(value == F("on")) {
+          state = 1;
+        } else if(value == F("off")) {
+          state = 0;
+        } else {
+          Serial.println("The value was incorrect");
+          // Wrong inputs
+          break;
         }
-        string += value;
+
+        if(Settings.TaskDevicePin1Inversed[event->TaskIndex]) {
+          state = (state + 1) & 1;
+        }
+        string += state;
       }
       Serial.print("command: ");
       Serial.println(command);
@@ -252,7 +264,13 @@ boolean Plugin_001(byte function, struct EventStruct *event, String& string)
             setPinState(PLUGIN_ID_001, event->Par1, PIN_MODE_OUTPUT, event->Par2);
             log = String(F("SW   : GPIO ")) + String(event->Par1) + String(F(" Set to ")) + String(event->Par2);
             addLog(LOG_LEVEL_INFO, log);
-            SendStatus(event->Source, getPinStateJSON(SEARCH_PIN_STATE, PLUGIN_ID_001, event->Par1, log, 0));
+            //SendStatus(event->Source, getPinStateJSON(SEARCH_PIN_STATE, PLUGIN_ID_001, event->Par1, log, 0));
+            String value;
+            if(event->Par2)
+              value = "\"v\":\"on\"";
+            else
+              value = "\"v\":\"off\"";
+            SendStatus(event->Source, getReportJson(event->idx, "switch", (char *)value.c_str()));
           }
         }
 
@@ -287,7 +305,9 @@ boolean Plugin_001(byte function, struct EventStruct *event, String& string)
             setPinState(PLUGIN_ID_001, event->Par1, PIN_MODE_PWM, event->Par2);
             log = String(F("SW   : GPIO ")) + String(event->Par1) + String(F(" Set PWM to ")) + String(event->Par2);
             addLog(LOG_LEVEL_INFO, log);
-            SendStatus(event->Source, getPinStateJSON(SEARCH_PIN_STATE, PLUGIN_ID_001, event->Par1, log, 0));
+            //SendStatus(event->Source, getPinStateJSON(SEARCH_PIN_STATE, PLUGIN_ID_001, event->Par1, log, 0));
+            String value = "\"pwm\":" + String(event->Par2);
+            SendStatus(event->Source, getReportJson(event->idx, "pwm", (char *)value.c_str()));
           }
         }
 
@@ -303,7 +323,9 @@ boolean Plugin_001(byte function, struct EventStruct *event, String& string)
             setPinState(PLUGIN_ID_001, event->Par1, PIN_MODE_OUTPUT, event->Par2);
             log = String(F("SW   : GPIO ")) + String(event->Par1) + String(F(" Pulsed for ")) + String(event->Par3) + String(F(" mS"));
             addLog(LOG_LEVEL_INFO, log);
-            SendStatus(event->Source, getPinStateJSON(SEARCH_PIN_STATE, PLUGIN_ID_001, event->Par1, log, 0));
+            //SendStatus(event->Source, getPinStateJSON(SEARCH_PIN_STATE, PLUGIN_ID_001, event->Par1, log, 0));
+            String value = "\"pulse\":" + String(event->Par3);
+            SendStatus(event->Source, getReportJson(event->idx, "pulse", (char *)value.c_str()));
           }
         }
 
@@ -318,7 +340,9 @@ boolean Plugin_001(byte function, struct EventStruct *event, String& string)
             setSystemTimer(event->Par3 * 1000, PLUGIN_ID_001, event->Par1, !event->Par2, 0);
             log = String(F("SW   : GPIO ")) + String(event->Par1) + String(F(" Pulse set for ")) + String(event->Par3) + String(F(" S"));
             addLog(LOG_LEVEL_INFO, log);
-            SendStatus(event->Source, getPinStateJSON(SEARCH_PIN_STATE, PLUGIN_ID_001, event->Par1, log, 0));
+            //SendStatus(event->Source, getPinStateJSON(SEARCH_PIN_STATE, PLUGIN_ID_001, event->Par1, log, 0));
+            String value = "\"longpulse\":" + String(event->Par3);
+            SendStatus(event->Source, getReportJson(event->idx, "longpulse", (char *)value.c_str()));
           }
         }
 
@@ -340,7 +364,9 @@ boolean Plugin_001(byte function, struct EventStruct *event, String& string)
           setPinState(PLUGIN_ID_001, event->Par2, PIN_MODE_SERVO, event->Par3);
           log = String(F("SW   : GPIO ")) + String(event->Par2) + String(F(" Servo set to ")) + String(event->Par3);
           addLog(LOG_LEVEL_INFO, log);
-          SendStatus(event->Source, getPinStateJSON(SEARCH_PIN_STATE, PLUGIN_ID_001, event->Par2, log, 0));
+          //SendStatus(event->Source, getPinStateJSON(SEARCH_PIN_STATE, PLUGIN_ID_001, event->Par2, log, 0));
+          String value = "\"angle\":" + String(event->Par3);
+          SendStatus(event->Source, getReportJson(event->idx, "servo", (char *)value.c_str()));
         }
 
         if (command == F("status"))
@@ -348,7 +374,7 @@ boolean Plugin_001(byte function, struct EventStruct *event, String& string)
           if (parseString(string, 2) == F("gpio"))
           {
             success = true;
-            SendStatus(event->Source, getPinStateJSON(SEARCH_PIN_STATE, PLUGIN_ID_001, event->Par2, dummyString, 0));
+            //SendStatus(event->Source, getPinStateJSON(SEARCH_PIN_STATE, PLUGIN_ID_001, event->Par2, dummyString, 0));
           }
         }
 

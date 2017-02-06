@@ -2329,10 +2329,13 @@ String getReportJson(int idx, char *event, char *jsonValue)
 
   reply += F("{\n\"idx\":");
   reply += idx;
-  reply += F(",\n\"event\":\"");
+  reply += F(",\n\"e\":\"");
   reply += event;
-  reply += F("\",\n\"value\":");
-  reply += jsonValue;
+  if(jsonValue) {
+    reply += F("\",");
+    reply += jsonValue;
+  } else
+    reply += F("\"");
   reply += F("\n}\n");
   return reply;
 }

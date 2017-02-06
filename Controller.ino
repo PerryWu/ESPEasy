@@ -199,9 +199,8 @@ void MQTTStatus(String& status)
   // to send bak request. Subscribe should only be used for others to send
   // command to device. So, Change to use MQTTpublish here.
   String pubname = Settings.MQTTpublish;
-  pubname.replace("/#", "/status");
-  pubname.replace("%sysname%", Settings.Name);
-  MQTTclient.publish(pubname.c_str(), status.c_str(),Settings.MQTTRetainFlag);
+  //MQTTclient.publish(pubname.c_str(), status.c_str(),Settings.MQTTRetainFlag);
+  MQTTclient.publish(pubname.c_str(), status.c_str(), true);
 }
 
 bool MQTTStatusBinary(char * payload, int payloadLen)
