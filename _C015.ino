@@ -108,7 +108,7 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
 
         root["idx"] = event->idx;
         String inputs;
-        char str[80];        
+        char str[80], str2[80], str3[80];
         switch (event->sensorType)
         {
           case SENSOR_TYPE_SINGLE:                      // single value sensor, used for Dallas, BH1750, etc
@@ -129,17 +129,21 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
             inputs.toCharArray(str, 80);
             root["data"] = str;
             inputs = toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
-            inputs.toCharArray(str, 80);
-            root["data2"] = str;
+            inputs.toCharArray(str2, 80);
+            root["data2"] = str2;
             break;            
           case SENSOR_TYPE_TEMP_HUM:                      // temp + hum + hum_stat, used for DHT11
             root["e"] = "report";
             inputs = toString(UserVar[event->BaseVarIndex ],ExtraTaskSettings.TaskDeviceValueDecimals[0]);
             inputs.toCharArray(str, 80);
+            Serial.print("temp: ");
+            Serial.println(str);
             root["temp"] = str;
             inputs = toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
-            inputs.toCharArray(str, 80);
-            root["humid"] = str;
+            inputs.toCharArray(str2, 80);
+            Serial.print("humid: ");
+            Serial.println(str2);
+            root["humid"] = str2;
             break;
           case SENSOR_TYPE_TEMP_BARO:                      // temp + hum + hum_stat + bar + bar_fore, used for BMP085
             root["e"] = "report";
@@ -147,8 +151,8 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
             inputs.toCharArray(str, 80);
             root["temp"] = str;
             inputs = toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
-            inputs.toCharArray(str, 80);
-            root["humid"] = str;
+            inputs.toCharArray(str2, 80);
+            root["humid"] = str2;
             break;
           case SENSOR_TYPE_TEMP_HUM_BARO:                      // temp + hum + hum_stat + bar + bar_fore, used for BME280
             root["e"] = "report";
@@ -156,11 +160,11 @@ boolean CPlugin_015(byte function, struct EventStruct *event, String& string)
             inputs.toCharArray(str, 80);
             root["temp"] = str;
             inputs = toString(UserVar[event->BaseVarIndex + 1],ExtraTaskSettings.TaskDeviceValueDecimals[1]);
-            inputs.toCharArray(str, 80);
-            root["humid"] = str;
+            inputs.toCharArray(str2, 80);
+            root["humid"] = str2;
             inputs = toString(UserVar[event->BaseVarIndex + 2],ExtraTaskSettings.TaskDeviceValueDecimals[2]);
-            inputs.toCharArray(str, 80);
-            root["bar"] = str;
+            inputs.toCharArray(str3, 80);
+            root["bar"] = str3;
             break;
           case SENSOR_TYPE_SWITCH:
             root["e"] = "report";

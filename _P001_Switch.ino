@@ -216,7 +216,7 @@ boolean Plugin_001(byte function, struct EventStruct *event, String& string)
       String command = (const char *)root["e"];
       Serial.println(command);
       if(command == F("switch")) {
-        String value = (const char *)root["value"];
+        String value = (const char *)root["v"];
         Serial.println(value);
         hit = true;
         string = "gpio,";

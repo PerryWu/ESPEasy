@@ -123,7 +123,7 @@
 #define ESP_PROJECT_PID           2015050101L
 #define ESP_EASY
 #define VERSION                             9
-#define BUILD                             153
+#define BUILD                             154
 #define BUILD_NOTES                        ""
 #define FEATURE_SPIFFS                  false
 

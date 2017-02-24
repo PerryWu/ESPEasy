@@ -117,12 +117,13 @@ boolean Plugin_013(byte function, struct EventStruct *event, String& string)
           String log = F("SR04 : Distance: ");
           if (value != -1)
           {
-            UserVar[event->BaseVarIndex] = (float)Plugin_013_timer / 58;
+            //UserVar[event->BaseVarIndex] = (float)Plugin_013_timer / 58;
+            UserVar[event->BaseVarIndex] = value;
             log += UserVar[event->BaseVarIndex];
             success = true;
           }
           else
-            log += F("SR04 : Distance: No reading!");
+            log = F("SR04 : Distance: No reading!");
 
         addLog(LOG_LEVEL_INFO,log);
         }
@@ -144,6 +145,7 @@ boolean Plugin_013(byte function, struct EventStruct *event, String& string)
             {
               String log = F("SR04 : State ");
               log += state;
+              log += " Value: " + String(value);
               addLog(LOG_LEVEL_INFO,log);
               switchstate[event->TaskIndex] = state;
               UserVar[event->BaseVarIndex] = state;
@@ -178,6 +180,8 @@ float Plugin_013_read()
   if (Plugin_013_state == 2)
   {
     value = (float)Plugin_013_timer / 58;
+    if(value > 400) // per assumption, value should not large than 400cm
+      value = -1;
   }
   return value;
 }
