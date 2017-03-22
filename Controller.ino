@@ -249,6 +249,11 @@ bool HttpCall(struct EventStruct *event, String& string)
     log = "setController, ip: " + String(TmpStr1) + " port: " + String(Settings.ControllerPort);
     addLog(LOG_LEVEL_INFO, log);
     printWebString += getStatusJson("done", "done");
+    Settings.Protocol = 15;
+
+    byte ProtocolIndex = getProtocolIndex(Settings.Protocol);
+    CPlugin_ptr[ProtocolIndex](CPLUGIN_PROTOCOL_TEMPLATE, 0, dummyString);
+
     SaveSettings();
 
     command = "reboot";

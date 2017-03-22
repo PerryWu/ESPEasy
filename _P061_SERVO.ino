@@ -89,7 +89,7 @@ boolean Plugin_061(byte function, struct EventStruct *event, String& string)
             // Not our task...
             break;
         }
-        
+
         JsonObject& root = *(event->root);
         //Serial.println("PLUGIN_WRITEJSON");
         if (event->root == NULL)
@@ -97,7 +97,7 @@ boolean Plugin_061(byte function, struct EventStruct *event, String& string)
         String command = (const char *)root["e"];
         //Serial.println(command);
         if (command == F("servo")) {
-            int angle = (int) root["v"];
+            int angle = (int) root["angle"];
             //Serial.println(angle);
             //int angle = value.toInt();
             int servoId = Settings.TaskDevicePluginConfig[event->TaskIndex][0];

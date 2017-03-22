@@ -2327,16 +2327,16 @@ String getReportJson(int idx, char *event, char *jsonValue)
   printToWebJSON = true;
   String reply = "";
 
-  reply += F("{\n\"idx\":");
+  reply += F("{\"idx\":");
   reply += idx;
-  reply += F(",\n\"e\":\"");
+  reply += F(",\"e\":\"");
   reply += event;
   if(jsonValue) {
     reply += F("\",");
     reply += jsonValue;
   } else
     reply += F("\"");
-  reply += F("\n}\n");
+  reply += F("}");
   return reply;
 }
 
