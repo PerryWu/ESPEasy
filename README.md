@@ -1,11 +1,8 @@
 # ESPEasy
-Easy MultiSensor device based on ESP8266
 
-This is where development takes place. Beware that latest versions may be unstable.
+The framework is based on the source 
+https://github.com/letscontrolit/ESPEasy
 
-Stable versions including libraries are currently on SoureForge:
+To make ESP8266 work with PillaKloud System, codes are modificated.
 
-http://sourceforge.net/projects/espeasy/
-
-Wiki: http://www.esp8266.nu
-Forum: http://www.esp8266.nu/forum
+Please visit www.pillakloud.com for the manual.
